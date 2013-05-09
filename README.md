@@ -1,4 +1,4 @@
-# GoPack
+# gopack
 
 Simple go package management a la [rebar](https://github.com/basho/rebar).
 
