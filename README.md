@@ -20,3 +20,19 @@ etc…
 
 The ```gp``` command will make sure your dependencies are downloaded, their respective git repos are pointed at the appropriate tag or branch, and your code is compiled against the desired library versions. Project dependencies are stored locally in the ```vendor``` directory.
 
+# Installation
+
+First checkout and build from source
+```
+git clone git@github.com:d2fn/gopack.git
+cd gopack
+go build
+```
+
+Then copy the ```gopack``` binary to your project directory and invoke just as you would go. Make sure the current directory is on your path or place the ```gp``` binary elsewhere on your path.
+```
+cp gopack ~/projects/mygoproject/gp
+cd ~/projects/myproject
+gp run *.go
+```
+
