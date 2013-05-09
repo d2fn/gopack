@@ -30,6 +30,8 @@ func main() {
 		})
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
