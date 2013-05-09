@@ -23,7 +23,7 @@ type Dep struct {
 
 func LoadDependencyModel() *Dependencies {
 	deps := new(Dependencies)
-	t, err := toml.LoadFile("./goop.config")
+	t, err := toml.LoadFile("./gopack.config")
 	if err != nil {
 		log.Fatal(err)
 	}
