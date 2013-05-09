@@ -6,10 +6,9 @@ A configuration file tells goop about your dependencies and which version should
 
 ```
 [dependencies]
-	[github.com/user/project1]
-		tag = 1.0
-	[github.com/user/project2]
-		branch = foo
+	[dependencies.toml]
+		import = "github.com/pelletier/go-toml"
+		tag = "1.0rc2"
 ```
 
 Then simply run, install, and test your code much as you would have with the ```go``` command. Just replace ```go``` with ```gp```.
