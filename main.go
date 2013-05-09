@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"fmt"
 )
 
 const (
@@ -22,7 +22,7 @@ func main() {
 	log.Println(d.String())
 	// prepare dependencies
 	d.VisitDeps(
-		func (d *Dep) {
+		func(d *Dep) {
 			log.Printf("updating dependency %s\n", d.Import)
 			d.goGetUpdate()
 			log.Printf("pointing %s at %s\n", d.Import, d.checkoutName())
@@ -39,7 +39,6 @@ func main() {
 
 // set GOPATH to the local vendor dir
 func setupEnv() {
-	// build the go command to fork once we've made sure dependencies are in place
 	dir, err := os.Getwd()
 	pwd = dir
 	log.Println(pwd)
@@ -52,4 +51,3 @@ func setupEnv() {
 		log.Fatal(err)
 	}
 }
-

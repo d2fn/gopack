@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"fmt"
 	"github.com/pelletier/go-toml"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -18,7 +18,7 @@ type Dependencies struct {
 type Dep struct {
 	Import string
 	Branch string
-	Tag string
+	Tag    string
 }
 
 func LoadDependencyModel() *Dependencies {
@@ -120,4 +120,3 @@ func (d *Dep) goGetUpdate() error {
 func (d *Dep) LoadTransitiveDeps() *Dependencies {
 	return new(Dependencies)
 }
-
