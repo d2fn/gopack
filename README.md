@@ -33,6 +33,7 @@ First checkout and build from source
 ```
 git clone git@github.com:d2fn/gopack.git
 cd gopack
+go get
 go build
 ```
 
