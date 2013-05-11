@@ -16,7 +16,7 @@
     <div class="wrapper">
       <header>
         <h1>gopack</h1>
-        <p>Dependency management for go inspired by rebar</p>
+        <p></p>
 
         <p class="view"><a href="https://github.com/d2fn/gopack">View the Project on GitHub <small>d2fn/gopack</small></a></p>
 
@@ -28,13 +28,19 @@
         </ul>
       </header>
       <section>
-        <h1>gopack</h1>
+        <p><strong>gopack</strong> is simple dependency management for go, inspired by <a href="https://github.com/basho/rebar">rebar</a>.</p>
 
-<p>Simple go package management a la <a href="https://github.com/basho/rebar">rebar</a>.</p>
+<p>A configuration file tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at <em>immutable</em> code.</p>
 
-<p>A configuration file tells goop about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at <em>immutable</em> code.</p>
+<div class="highlight"><pre><span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">memcache</span><span class="p">]</span>
+<span class="n">import</span> <span class="o">=</span> <span class="s">"github.com/bradfitz/gomemcache/memcache"</span>
+<span class="n">tag</span>    <span class="o">=</span> <span class="s">"1.2"</span>
 
-<div class="highlight"><pre><span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">toml</span><span class="p">]</span>
+<span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">mux</span><span class="p">]</span>
+<span class="n">import</span> <span class="o">=</span> <span class="s">"github.com/gorilla/mux"</span>
+<span class="n">branch</span> <span class="o">=</span> <span class="s">"1.0rc2"</span>
+
+<span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">toml</span><span class="p">]</span>
 <span class="n">import</span> <span class="o">=</span> <span class="s">"github.com/pelletier/go-toml"</span>
 <span class="n">commit</span> <span class="o">=</span> <span class="s">"23d36c08ab90f4957ae8e7d781907c368f5454dd"</span>
 </pre></div>
