@@ -30,7 +30,7 @@
       <section>
         <p><strong>gopack</strong> is simple dependency management for go, inspired by <a href="https://github.com/basho/rebar">rebar</a>.</p>
 
-<p>A configuration file tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at <em>immutable</em> code.</p>
+<p>Create a file named <code>gopack.config</code> in the root of your project to tell gopack about your dependencies and which version should be included. You can point to a tag, branch, commit, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at <em>immutable</em> code.</p>
 
 <div class="highlight"><pre><span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">memcache</span><span class="p">]</span>
 <span class="n">import</span> <span class="o">=</span> <span class="s">"github.com/bradfitz/gomemcache/memcache"</span>
@@ -53,7 +53,7 @@
 
 <p>etc…</p>
 
-<p>The <code>gp</code> command will make sure your dependencies are downloaded, their respective git repos are pointed at the appropriate tag or branch, and your code is compiled against the desired library versions. Project dependencies are stored locally in the <code>vendor</code> directory.</p>
+<p>gopack will make sure your dependencies are downloaded, their respective git repos are pointed at the appropriate tag or branch, and your code is compiled against the desired library versions. Project dependencies are stored locally in the <code>vendor</code> directory so you'll probably want to add that to your <code>.gitignore</code>.</p>
 
 <h1>Installation</h1>
 
