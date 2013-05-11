@@ -19,13 +19,12 @@ func main() {
 	setupEnv()
 	log.Println(pwd)
 	d := LoadDependencyModel()
-	log.Println(d.String())
 	// prepare dependencies
 	d.VisitDeps(
 		func(d *Dep) {
-			log.Printf("updating dependency %s\n", d.Import)
+			log.Printf("updating %s\n", d.Import)
 			d.goGetUpdate()
-			log.Printf("pointing %s at %s\n", d.Import, d.checkoutName())
+			log.Printf("pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
 			d.switchToBranchOrTag()
 		})
 	// run the specified command

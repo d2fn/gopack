@@ -2,11 +2,21 @@ package main
 
 import (
 	"fmt"
-	"github.com/pelletier/go-toml"
+	"github.com/kylelemons/go-gypsy/yaml"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+)
+
+const (
+	ImportProp = "import"
+	BranchProp = "branch"
+	CommitProp = "commit"
+	TagProp    = "tag"
+	BranchFlag = 1 << 0
+	CommitFlag = 1 << 1
+	TagFlag    = 1 << 2
 )
 
 type Dependencies struct {
@@ -17,43 +27,57 @@ type Dependencies struct {
 
 type Dep struct {
 	Import string
-	Branch string
-	Tag    string
+	// which of BranchFlag, CommitFlag, TagFlag is this repo
+	CheckoutFlag uint8
+	// the name of the thing to checkout whether it be a commit, branch, or tag
+	CheckoutSpec string
 }
 
 func LoadDependencyModel() *Dependencies {
 	deps := new(Dependencies)
-	t, err := toml.LoadFile("./gopack.config")
+	f, err := yaml.ReadFile("./gopack.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
-	depsTree := t.Get("dependencies").(*toml.TomlTree)
-	deps.Imports = make([]string, len(depsTree.Keys()))
-	deps.Keys = make([]string, len(depsTree.Keys()))
-	deps.DepList = make([]*Dep, len(depsTree.Keys()))
-	for i, k := range depsTree.Keys() {
-		depTree := depsTree.Get(k).(*toml.TomlTree)
-		dep := new(Dep)
-		dep.Import = depTree.Get("import").(string)
-		if !strings.HasPrefix(dep.Import, "github.com") {
-			log.Fatal("don't know how to manage this dependency, not a known git repo: %s", dep.Import)
-		}
-		b := depTree.Get("branch")
-		t := depTree.Get("tag")
-		if t != nil && b != nil {
-			log.Fatal("both branch and tag specified for import of %s\n", dep.Import)
-		}
-		if b != nil {
-			dep.Branch = b.(string)
-		} else if t != nil {
-			dep.Tag = t.(string)
-		}
-		deps.Keys[i] = k
-		deps.Imports[i] = dep.Import
-		deps.DepList[i] = dep
-
+	child, err := yaml.Child(f.Root, "deps")
+	if err != nil {
+		log.Fatal(err)
+	}
+	depMap := child.(yaml.Map)
+	deps.Imports = make([]string, len(depMap))
+	deps.Keys = make([]string, len(depMap))
+	deps.DepList = make([]*Dep, len(depMap))
+	i := 0
+	for depKey, child := range depMap {
+		d := new(Dep)
+		depProps := child.(yaml.Map)
+		d.Import = string(depProps["import"].(yaml.Scalar))
+		d.setCheckout(depProps, "branch", BranchFlag)
+		d.setCheckout(depProps, "commit", CommitFlag)
+		d.setCheckout(depProps, "tag", TagFlag)
+		deps.Keys[i] = depKey
+		deps.Imports[i] = d.Import
+		deps.DepList[i] = d
+		i = i + 1
 	}
 	return deps
+}
+
+func (d *Dep) setCheckout(n yaml.Map, key string, flag uint8) {
+	s, found := n[key]
+	if found {
+		d.CheckoutSpec = string(s.(yaml.Scalar))
+		d.CheckoutFlag |= flag
+	}
+}
+
+func (d *Dep) isValid() error {
+	// check that the checkout flag is a power of 2 (only one flag is checked)
+	f := d.CheckoutFlag
+	if f&(f-1) != 0 {
+		return fmt.Errorf("%s - only one of branch/commit/tag may be specified", d.Import)
+	}
+	return nil
 }
 
 func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
@@ -67,16 +91,20 @@ func (d *Dependencies) String() string {
 }
 
 func (d *Dep) String() string {
-	return fmt.Sprintf("import = %s, branch = %s, tag = %s", d.Import, d.Branch, d.Tag)
+	return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
 }
 
-func (d *Dep) checkoutName() string {
-	if d.Tag != "" {
-		return d.Tag
-	} else if d.Branch != "" {
-		return d.Branch
+func (d *Dep) CheckoutType() string {
+	if d.CheckoutFlag == BranchFlag {
+		return "branch"
 	}
-	return "master"
+	if d.CheckoutFlag == CommitFlag {
+		return "commit"
+	}
+	if d.CheckoutFlag == TagFlag {
+		return "tag"
+	}
+	return ""
 }
 
 func (d *Dep) Src() string {
@@ -89,10 +117,10 @@ func (d *Dep) switchToBranchOrTag() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("git", "checkout", d.checkoutName())
+	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
 	err = cmd.Run()
 	if err != nil {
-		log.Println("error checking out %s on %s", d.checkoutName(), d.Import)
+		log.Println("error checking out %s on %s", d.CheckoutSpec, d.Import)
 	}
 	return cdHome()
 }
