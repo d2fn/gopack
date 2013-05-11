@@ -22,4 +22,7 @@ _testmain.go
 *.exe
 
 # ignore the bin for now
-diode
+gopack
+
+vendor/
+
