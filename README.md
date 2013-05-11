@@ -2,9 +2,17 @@
 
 Simple go package management a la [rebar](https://github.com/basho/rebar).
 
-A configuration file tells goop about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at _immutable_ code.
+A configuration file tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at _immutable_ code.
 
 ```toml
+[deps.memcache]
+import = "github.com/bradfitz/gomemcache/memcache"
+tag = "1.2"
+
+[deps.mux]
+import = "github.com/gorilla/mux"
+branch = "1.0rc2"
+
 [deps.toml]
 import = "github.com/pelletier/go-toml"
 commit = "23d36c08ab90f4957ae8e7d781907c368f5454dd"
