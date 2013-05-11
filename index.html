@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>gopack by d2fn</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>gopack</h1>
+        <p>Dependency management for go inspired by rebar</p>
+
+        <p class="view"><a href="https://github.com/d2fn/gopack">View the Project on GitHub <small>d2fn/gopack</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/d2fn/gopack/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/d2fn/gopack/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/d2fn/gopack">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>gopack</h1>
+
+<p>Simple go package management a la <a href="https://github.com/basho/rebar">rebar</a>.</p>
+
+<p>A configuration file tells goop about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at <em>immutable</em> code.</p>
+
+<div class="highlight"><pre><span class="p">[</span><span class="n">deps</span><span class="p">.</span><span class="n">toml</span><span class="p">]</span>
+<span class="n">import</span> <span class="o">=</span> <span class="s">"github.com/pelletier/go-toml"</span>
+<span class="n">commit</span> <span class="o">=</span> <span class="s">"23d36c08ab90f4957ae8e7d781907c368f5454dd"</span>
+</pre></div>
+
+<p>Then simply run, install, and test your code much as you would have with the <code>go</code> command. Just replace <code>go</code> with <code>gp</code>.</p>
+
+<p><code>gp test</code></p>
+
+<p><code>gp run *.go</code></p>
+
+<p>etc…</p>
+
+<p>The <code>gp</code> command will make sure your dependencies are downloaded, their respective git repos are pointed at the appropriate tag or branch, and your code is compiled against the desired library versions. Project dependencies are stored locally in the <code>vendor</code> directory.</p>
+
+<h1>Installation</h1>
+
+<p>First checkout and build from source</p>
+
+<pre><code>git clone git@github.com:d2fn/gopack.git
+cd gopack
+go build
+</code></pre>
+
+<p>Then copy the <code>gopack</code> binary to your project directory and invoke just as you would go. Make sure the current directory is on your path or place the <code>gp</code> binary elsewhere on your path.</p>
+
+<pre><code>cp gopack ~/projects/mygoproject/gp
+cd ~/projects/myproject
+gp run *.go
+</code></pre>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/d2fn">d2fn</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
