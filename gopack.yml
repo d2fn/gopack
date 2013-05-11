@@ -1,0 +1,5 @@
+deps:
+    yaml:
+        import: github.com/kylelemons/go-gypsy/yaml
+        commit: 111527ef6b1e9972906634738b14adaa21f97c24
+
