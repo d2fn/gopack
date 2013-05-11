@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/kylelemons/go-gypsy/yaml"
+	"github.com/pelletier/go-toml"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -34,38 +35,36 @@ type Dep struct {
 
 func LoadDependencyModel() *Dependencies {
 	deps := new(Dependencies)
-	f, err := yaml.ReadFile("./gopack.yml")
+	t, err := toml.LoadFile("./gopack.config")
 	if err != nil {
 		log.Fatal(err)
 	}
-	child, err := yaml.Child(f.Root, "deps")
-	if err != nil {
-		log.Fatal(err)
-	}
-	depMap := child.(yaml.Map)
-	deps.Imports = make([]string, len(depMap))
-	deps.Keys = make([]string, len(depMap))
-	deps.DepList = make([]*Dep, len(depMap))
-	i := 0
-	for depKey, child := range depMap {
+	depsTree := t.Get("deps").(*toml.TomlTree)
+	deps.Imports = make([]string, len(depsTree.Keys()))
+	deps.Keys = make([]string, len(depsTree.Keys()))
+	deps.DepList = make([]*Dep, len(depsTree.Keys()))
+	for i, k := range depsTree.Keys() {
+		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
-		depProps := child.(yaml.Map)
-		d.Import = string(depProps["import"].(yaml.Scalar))
-		d.setCheckout(depProps, "branch", BranchFlag)
-		d.setCheckout(depProps, "commit", CommitFlag)
-		d.setCheckout(depProps, "tag", TagFlag)
-		deps.Keys[i] = depKey
+		d.Import = depTree.Get("import").(string)
+		if !strings.HasPrefix(d.Import, "github.com") {
+			log.Fatal("don't know how to manage this dependency, not a known git repo: %s", d.Import)
+		}
+		d.setCheckout(depTree, "branch", BranchFlag)
+		d.setCheckout(depTree, "commit", CommitFlag)
+		d.setCheckout(depTree, "tag",    TagFlag)
+		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
-		i = i + 1
+
 	}
 	return deps
 }
 
-func (d *Dep) setCheckout(n yaml.Map, key string, flag uint8) {
-	s, found := n[key]
-	if found {
-		d.CheckoutSpec = string(s.(yaml.Scalar))
+func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
+	s := t.Get(key)
+	if s != nil {
+		d.CheckoutSpec = s.(string)
 		d.CheckoutFlag |= flag
 	}
 }
