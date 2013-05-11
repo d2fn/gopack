@@ -52,7 +52,7 @@ func LoadDependencyModel() *Dependencies {
 		}
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
-		d.setCheckout(depTree, "tag",    TagFlag)
+		d.setCheckout(depTree, "tag", TagFlag)
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
