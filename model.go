@@ -37,7 +37,7 @@ func LoadDependencyModel() *Dependencies {
 	deps := new(Dependencies)
 	t, err := toml.LoadFile("./gopack.config")
 	if err != nil {
-		log.Fatal(err)
+		fail(err)
 	}
 	depsTree := t.Get("deps").(*toml.TomlTree)
 	deps.Imports = make([]string, len(depsTree.Keys()))
@@ -48,11 +48,12 @@ func LoadDependencyModel() *Dependencies {
 		d := new(Dep)
 		d.Import = depTree.Get("import").(string)
 		if !strings.HasPrefix(d.Import, "github.com") {
-			log.Fatal("don't know how to manage this dependency, not a known git repo: %s", d.Import)
+			failf("don't know how to manage this dependency, not a known git repo: %s\n", d.Import)
 		}
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
+		d.CheckValidity()
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
@@ -69,13 +70,11 @@ func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
 	}
 }
 
-func (d *Dep) isValid() error {
-	// check that the checkout flag is a power of 2 (only one flag is checked)
+func (d *Dep) CheckValidity() {
 	f := d.CheckoutFlag
 	if f&(f-1) != 0 {
-		return fmt.Errorf("%s - only one of branch/commit/tag may be specified", d.Import)
+		failf("%s - only one of branch/commit/tag may be specified\n", d.Import)
 	}
-	return nil
 }
 
 func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
