@@ -61,7 +61,6 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	fmtcolor(Green, "done\n")
 }
 
 // set GOPATH to the local vendor dir
@@ -72,7 +71,6 @@ func setupEnv() {
 		fail(err)
 	}
 	vendor := fmt.Sprintf("%s/%s", pwd, VendorDir)
-	fmt.Println(pwd)
 	err = os.Setenv("GOPATH", vendor)
 	if err != nil {
 		fail(err)
