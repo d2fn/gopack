@@ -8,14 +8,15 @@ import (
 )
 
 const (
-	VendorDir = "vendor"
+	GopackDir = ".gopack"
+	VendorDir = ".gopack/vendor"
 )
 
 const (
-	Blue     = 94
-	Green    = 92
-	Red      = 31
-	Gray     = 90
+	Blue     = uint8(94)
+	Green    = uint8(92)
+	Red      = uint8(31)
+	Gray     = uint8(90)
 	EndColor = "\033[0m"
 )
 
@@ -36,11 +37,13 @@ func main() {
 			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
 			d.switchToBranchOrTag()
 		})
+	stats, err := Analyze(".")
+	fmt.Print(stats)
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		fail(err)
 	}
@@ -55,6 +58,7 @@ func setupEnv() {
 		fail(err)
 	}
 	vendor := fmt.Sprintf("%s/%s", pwd, VendorDir)
+	fmt.Println(pwd)
 	err = os.Setenv("GOPATH", vendor)
 	if err != nil {
 		fail(err)
