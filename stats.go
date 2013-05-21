@@ -27,7 +27,7 @@ func NewProjectStats() *ProjectStats {
 	}
 }
 
-func Analyze(dir string) (*ProjectStats, error) {
+func AnalyzeSourceTree(dir string) (*ProjectStats, error) {
 	ps := NewProjectStats()
 	err := filepath.Walk(
 		".",

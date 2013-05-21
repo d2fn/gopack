@@ -27,22 +27,23 @@ var (
 func main() {
 	fmtcolor(104, "/// g o p a c k ///")
 	fmt.Println()
+	// localize GOPATH
 	setupEnv()
-	ps, err := Analyze(".")
+	ps, err := AnalyzeSourceTree(".")
 	if err != nil {
 		fail(err)
 	}
 	m := LoadDependencyModel()
+	// fail when remote imports are not managed in gopack
+	for importPath, importStats := range ps.ImportStatsByPath {
+		if importStats.Remote && !m.IncludesDependency(importPath) {
+			msg := fmt.Sprintf("%s referenced in the following locations but not managed in gopack.config\n%s\n", importPath, importStats.ReferenceList())
+			failf(msg)
+		}
+	}
 	// prepare dependencies
 	m.VisitDeps(
 		func(d *Dep) {
-			// fail when remote imports are not managed in gopack
-			for importPath, importStats := range ps.ImportStatsByPath {
-				if importStats.Remote && !m.IncludesDependency(importPath) {
-					msg := fmt.Sprintf("%s referenced in the following locations but not managed in gopack.config\n%s\n", importPath, importStats.ReferenceList())
-					failf(msg)
-				}
-			}
 			if ps.IsImportUsed(d.Import) {
 				fmtcolor(Gray, "updating %s\n", d.Import)
 				d.goGetUpdate()
