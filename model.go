@@ -23,6 +23,7 @@ type Dependencies struct {
 	Imports []string
 	Keys    []string
 	DepList []*Dep
+	ImportMap map[string]*Dep
 }
 
 type Dep struct {
@@ -43,6 +44,7 @@ func LoadDependencyModel() *Dependencies {
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
+	deps.ImportMap = make(map[string]*Dep)
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
@@ -57,9 +59,14 @@ func LoadDependencyModel() *Dependencies {
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
-
+		deps.ImportMap[d.Import] = d
 	}
 	return deps
+}
+
+func (d *Dependencies) IncludesDependency(importPath string) bool {
+	_, found := d.ImportMap[importPath]
+	return found
 }
 
 func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
