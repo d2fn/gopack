@@ -28,17 +28,29 @@ func main() {
 	fmtcolor(104, "/// g o p a c k ///")
 	fmt.Println()
 	setupEnv()
-	d := LoadDependencyModel()
+	ps, err := Analyze(".")
+	if err != nil {
+		fail(err)
+	}
+	m := LoadDependencyModel()
 	// prepare dependencies
-	d.VisitDeps(
+	m.VisitDeps(
 		func(d *Dep) {
-			fmtcolor(Gray, "updating %s\n", d.Import)
-			d.goGetUpdate()
-			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-			d.switchToBranchOrTag()
+			for importPath, importStats := range ps.ImportStatsByPath {
+				if importStats.Remote && !m.IncludesDependency(importPath) {
+					msg := fmt.Sprintf("%s referenced in the following locations but not managed in gopack.config\n%s\n", importPath, importStats.ReferenceList())
+					failf(msg)
+				}
+			}
+			if ps.IsImportUsed(d.Import) {
+				fmtcolor(Gray, "updating %s\n", d.Import)
+				d.goGetUpdate()
+				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
+				d.switchToBranchOrTag()
+			} else {
+				failf("%s in gopack.config unused\n", d.Import)
+			}
 		})
-	stats, err := Analyze(".")
-	fmt.Print(stats)
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
