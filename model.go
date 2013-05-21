@@ -20,9 +20,9 @@ const (
 )
 
 type Dependencies struct {
-	Imports []string
-	Keys    []string
-	DepList []*Dep
+	Imports   []string
+	Keys      []string
+	DepList   []*Dep
 	ImportMap map[string]*Dep
 }
 

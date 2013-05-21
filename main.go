@@ -36,6 +36,7 @@ func main() {
 	// prepare dependencies
 	m.VisitDeps(
 		func(d *Dep) {
+			// fail when remote imports are not managed in gopack
 			for importPath, importStats := range ps.ImportStatsByPath {
 				if importStats.Remote && !m.IncludesDependency(importPath) {
 					msg := fmt.Sprintf("%s referenced in the following locations but not managed in gopack.config\n%s\n", importPath, importStats.ReferenceList())
@@ -48,6 +49,7 @@ func main() {
 				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
 				d.switchToBranchOrTag()
 			} else {
+				// fail when dependencies in gopack are not used in source
 				failf("%s in gopack.config unused\n", d.Import)
 			}
 		})

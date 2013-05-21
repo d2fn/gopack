@@ -1,23 +1,23 @@
 package main
 
 import (
-	"os"
 	"fmt"
-	"path/filepath"
-	"strings"
-	"strconv"
+	"go/ast"
 	"go/parser"
 	"go/token"
-	"go/ast"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type ProjectStats struct {
 	ImportStatsByPath map[string]*ImportStats
 }
 
-type ImportStats  struct {
-	Path string
-	Remote bool
+type ImportStats struct {
+	Path               string
+	Remote             bool
 	ReferencePositions []token.Position
 }
 
@@ -89,8 +89,8 @@ func NewImportStats(importPath string, pos token.Position) *ImportStats {
 	if len(parts) > 0 && strings.Contains(parts[0], ".") && strings.Index(parts[0], ".") > 0 {
 		remote = true
 	}
-	return &ImportStats {
-		importPath, remote, []token.Position{ pos },
+	return &ImportStats{
+		importPath, remote, []token.Position{pos},
 	}
 }
 
