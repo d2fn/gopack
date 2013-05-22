@@ -34,9 +34,10 @@ type Dep struct {
 	CheckoutSpec string
 }
 
-func LoadDependencyModel() *Dependencies {
+func LoadDependencyModel(dir string) *Dependencies {
 	deps := new(Dependencies)
-	t, err := toml.LoadFile("./gopack.config")
+	path := fmt.Sprintf("%s/gopack.config", dir)
+	t, err := toml.LoadFile(path)
 	if err != nil {
 		fail(err)
 	}
@@ -151,4 +152,27 @@ func (d *Dep) goGetUpdate() error {
 
 func (d *Dep) LoadTransitiveDeps() *Dependencies {
 	return new(Dependencies)
+}
+
+func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {
+	errors := []*ProjectError{}
+	for path, s := range p.ImportStatsByPath {
+		if s.Remote && !d.IncludesDependency(path) {
+			// report a validation error with the locations in source
+			// where an import is used but unmanaged in gopack.config
+			errors = append(errors, UnmanagedImportError(s))
+		}
+	}
+	for _, dep := range d.DepList {
+		if !p.IsImportUsed(dep.Import) {
+			errors = append(errors, UnusedDependencyError(dep.Import))
+		}
+	}
+	return errors
+}
+
+func ShowValidationErrors(errors []*ProjectError) {
+	for _, e := range errors {
+		fmt.Errorf("%s\n", e.String())
+	}
 }

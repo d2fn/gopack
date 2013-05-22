@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	GopackDir = ".gopack"
-	VendorDir = ".gopack/vendor"
+	GopackDir          = ".gopack"
+	GopackTestProjects = ".gopack/test-projects"
+	VendorDir          = ".gopack/vendor"
 )
 
 const (
@@ -29,30 +30,19 @@ func main() {
 	fmt.Println()
 	// localize GOPATH
 	setupEnv()
-	ps, err := AnalyzeSourceTree(".")
+	p, err := AnalyzeSourceTree(".")
 	if err != nil {
 		fail(err)
 	}
-	m := LoadDependencyModel()
-	// fail when remote imports are not managed in gopack
-	for importPath, importStats := range ps.ImportStatsByPath {
-		if importStats.Remote && !m.IncludesDependency(importPath) {
-			msg := fmt.Sprintf("%s referenced in the following locations but not managed in gopack.config\n%s\n", importPath, importStats.ReferenceList())
-			failf(msg)
-		}
-	}
+	d := LoadDependencyModel(".")
+	failWith(d.Validate(p))
 	// prepare dependencies
-	m.VisitDeps(
+	d.VisitDeps(
 		func(d *Dep) {
-			if ps.IsImportUsed(d.Import) {
-				fmtcolor(Gray, "updating %s\n", d.Import)
-				d.goGetUpdate()
-				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-				d.switchToBranchOrTag()
-			} else {
-				// fail when dependencies in gopack are not used in source
-				failf("%s in gopack.config unused\n", d.Import)
-			}
+			fmtcolor(Gray, "updating %s\n", d.Import)
+			d.goGetUpdate()
+			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
+			d.switchToBranchOrTag()
 		})
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
@@ -85,7 +75,7 @@ func fmtcolor(c uint8, s string, args ...interface{}) {
 	} else {
 		fmt.Printf(s)
 	}
-	fmt.Printf("%s", EndColor)
+	fmt.Printf(EndColor)
 }
 
 func logcolor(c uint8, s string, args ...interface{}) {
@@ -95,7 +85,7 @@ func logcolor(c uint8, s string, args ...interface{}) {
 	} else {
 		log.Printf(s)
 	}
-	log.Printf("%s", EndColor)
+	log.Printf(EndColor)
 }
 
 func failf(s string, args ...interface{}) {
@@ -106,6 +96,18 @@ func failf(s string, args ...interface{}) {
 func fail(a ...interface{}) {
 	fmt.Printf("\033[%dm", Red)
 	fmt.Print(a)
-	fmt.Printf("%s", EndColor)
+	fmt.Printf(EndColor)
 	os.Exit(1)
+}
+
+func failWith(errors []*ProjectError) {
+	if len(errors) > 0 {
+		fmt.Printf("\033[%dm", Red)
+		for _, e := range errors {
+			fmt.Printf(e.String())
+		}
+		fmt.Printf(EndColor)
+		fmt.Println()
+		os.Exit(len(errors))
+	}
 }

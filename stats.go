@@ -30,11 +30,19 @@ func NewProjectStats() *ProjectStats {
 func AnalyzeSourceTree(dir string) (*ProjectStats, error) {
 	ps := NewProjectStats()
 	err := filepath.Walk(
-		".",
+		dir,
 		func(path string, info os.FileInfo, err error) error {
-			if strings.HasPrefix(path, GopackDir) || strings.HasPrefix(path, ".git") {
-				return nil
-			} else if strings.HasSuffix(path, ".go") {
+			fileDir := filepath.Dir(path)
+			baseName := filepath.Base(path)
+			if strings.HasSuffix(baseName, ".go") {
+				if !strings.HasPrefix(dir, GopackDir) {
+					// bail if not analyzing the gopack dir specifically
+					// and we hit that directory as part of this analysis
+					// (should only ever be an issue with running gopack on itself and running tests)
+					if strings.HasPrefix(fileDir, GopackDir) {
+						return nil
+					}
+				}
 				e := ps.analyzeSourceFile(path)
 				if e != nil {
 					return e
