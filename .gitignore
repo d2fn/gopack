@@ -21,8 +21,9 @@ _testmain.go
 
 *.exe
 
-# ignore the bin for now
+# ignore the bin
 gopack
+errors
 
-vendor/
+.gopack/vendor/
 
