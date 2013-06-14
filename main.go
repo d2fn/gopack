@@ -22,10 +22,15 @@ const (
 )
 
 var (
-	pwd string
+	pwd        string
+	showColors = true
 )
 
 func main() {
+	if os.Getenv("GOPACK_SKIP_COLORS") == "1" {
+		showColors = false
+	}
+
 	fmtcolor(104, "/// g o p a c k ///")
 	fmt.Println()
 	// localize GOPATH
@@ -69,13 +74,19 @@ func setupEnv() {
 }
 
 func fmtcolor(c uint8, s string, args ...interface{}) {
-	fmt.Printf("\033[%dm", c)
+	if showColors {
+		fmt.Printf("\033[%dm", c)
+	}
+
 	if len(args) > 0 {
 		fmt.Printf(s, args...)
 	} else {
 		fmt.Printf(s)
 	}
-	fmt.Printf(EndColor)
+
+	if showColors {
+		fmt.Printf(EndColor)
+	}
 }
 
 func logcolor(c uint8, s string, args ...interface{}) {
