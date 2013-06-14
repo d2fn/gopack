@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	pwd string
+	pwd        string
 	showColors = true
 )
 
