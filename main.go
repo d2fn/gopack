@@ -59,15 +59,29 @@ func main() {
 	}
 }
 
+// Set the working directory.
+// It's the current directory by default.
+// It can be overriden setting the environment variable GOPACK_APP_CONFIG.
+func setPwd() {
+	var dir string
+	var err error
+
+	dir = os.Getenv("GOPACK_APP_CONFIG")
+	if dir == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			fail(err)
+		}
+	}
+
+	pwd = dir
+}
+
 // set GOPATH to the local vendor dir
 func setupEnv() {
-	dir, err := os.Getwd()
-	pwd = dir
-	if err != nil {
-		fail(err)
-	}
+	setPwd()
 	vendor := fmt.Sprintf("%s/%s", pwd, VendorDir)
-	err = os.Setenv("GOPATH", vendor)
+	err := os.Setenv("GOPATH", vendor)
 	if err != nil {
 		fail(err)
 	}
