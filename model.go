@@ -166,7 +166,7 @@ func (d *Dep) gitCheckout() {
 }
 
 func (d *Dep) hgCheckout() {
-	var cmd string
+	var cmd *exec.Cmd
 
 	if d.CheckoutFlag == CommitFlag {
 		cmd = exec.Command("hg", "update", "-c", d.CheckoutSpec)
