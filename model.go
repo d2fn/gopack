@@ -20,10 +20,10 @@ const (
 )
 
 type Dependencies struct {
-	Imports   []string
-	Keys      []string
-	DepList   []*Dep
-	ImportMap map[string]*Dep
+	Imports     []string
+	Keys        []string
+	DepList     []*Dep
+	ImportGraph *Graph
 }
 
 type Dep struct {
@@ -41,11 +41,13 @@ func LoadDependencyModel(dir string) *Dependencies {
 	if err != nil {
 		fail(err)
 	}
+
 	depsTree := t.Get("deps").(*toml.TomlTree)
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
-	deps.ImportMap = make(map[string]*Dep)
+	deps.ImportGraph = NewGraph()
+
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
@@ -60,14 +62,14 @@ func LoadDependencyModel(dir string) *Dependencies {
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
-		deps.ImportMap[d.Import] = d
+		deps.ImportGraph.Insert(d)
 	}
 	return deps
 }
 
-func (d *Dependencies) IncludesDependency(importPath string) bool {
-	_, found := d.ImportMap[importPath]
-	return found
+func (d *Dependencies) IncludesDependency(importPath string) (*Node, bool) {
+	node := d.ImportGraph.Search(importPath)
+	return node, node != nil
 }
 
 func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
@@ -156,15 +158,24 @@ func (d *Dep) LoadTransitiveDeps() *Dependencies {
 
 func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {
 	errors := []*ProjectError{}
+	includedDeps := make(map[string]*Dep)
+
 	for path, s := range p.ImportStatsByPath {
-		if s.Remote && !d.IncludesDependency(path) {
-			// report a validation error with the locations in source
-			// where an import is used but unmanaged in gopack.config
-			errors = append(errors, UnmanagedImportError(s))
+		node, found := d.IncludesDependency(path)
+		if s.Remote {
+			if found {
+				includedDeps[node.Dependency.Import] = node.Dependency
+			} else {
+				// report a validation error with the locations in source
+				// where an import is used but unmanaged in gopack.config
+				errors = append(errors, UnmanagedImportError(s))
+			}
 		}
 	}
+
 	for _, dep := range d.DepList {
-		if !p.IsImportUsed(dep.Import) {
+		_, found := includedDeps[dep.Import]
+		if !found && !p.IsImportUsed(dep.Import) {
 			errors = append(errors, UnusedDependencyError(dep.Import))
 		}
 	}
