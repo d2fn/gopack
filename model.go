@@ -96,7 +96,11 @@ func (d *Dependencies) String() string {
 }
 
 func (d *Dep) String() string {
-	return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+	if d.CheckoutType() != "" {
+		return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+	} else {
+		return fmt.Sprintf("import = %s", d.Import)
+	}
 }
 
 func (d *Dep) CheckoutType() string {

@@ -46,8 +46,10 @@ func main() {
 		func(d *Dep) {
 			fmtcolor(Gray, "updating %s\n", d.Import)
 			d.goGetUpdate()
-			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-			d.switchToBranchOrTag()
+			if d.CheckoutType() != "" {
+				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
+				d.switchToBranchOrTag()
+			}
 		})
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
