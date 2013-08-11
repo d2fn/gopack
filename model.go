@@ -50,9 +50,6 @@ func LoadDependencyModel(dir string) *Dependencies {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
 		d.Import = depTree.Get("import").(string)
-		if !strings.HasPrefix(d.Import, "github.com") {
-			failf("don't know how to manage this dependency, not a known git repo: %s\n", d.Import)
-		}
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
