@@ -125,7 +125,7 @@ func (d *Dep) switchToBranchOrTag() error {
 	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
 	err = cmd.Run()
 	if err != nil {
-		log.Println("error checking out %s on %s", d.CheckoutSpec, d.Import)
+		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
 	}
 	return cdHome()
 }
@@ -134,7 +134,7 @@ func (d *Dep) cdSrc() error {
 	err := os.Chdir(d.Src())
 	if err != nil {
 		log.Print(err)
-		log.Println("couldn't cd to src dir for %s", d.Import)
+		log.Printf("couldn't cd to src dir for %s\n", d.Import)
 		return err
 	}
 	return nil
