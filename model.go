@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -50,9 +51,6 @@ func LoadDependencyModel(dir string) *Dependencies {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
 		d.Import = depTree.Get("import").(string)
-		if !strings.HasPrefix(d.Import, "github.com") {
-			failf("don't know how to manage this dependency, not a known git repo: %s\n", d.Import)
-		}
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
@@ -122,12 +120,64 @@ func (d *Dep) switchToBranchOrTag() error {
 	if err != nil {
 		return err
 	}
+
+	scm, err := d.Scm()
+
+	switch {
+	case scm == "git":
+		d.gitCheckout()
+	case scm == "hg":
+		d.hgCheckout()
+	default:
+		log.Println(err)
+	}
+
+	return cdHome()
+}
+
+// Tell the scm where the dependency is hosted.
+func (d *Dep) Scm() (string, error) {
+	paths := []string{".git", ".hg"}
+
+	for _, scmPath := range paths {
+		if d.scmPath(path.Join(d.Src(), scmPath)) {
+			return strings.TrimLeft(scmPath, "."), nil
+		}
+	}
+
+	return "", fmt.Errorf("unknown scm for %s", d.Import)
+}
+
+func (d *Dep) scmPath(scmPath string) bool {
+	stat, err := os.Stat(scmPath)
+	if err != nil {
+		return false
+	}
+
+	return stat.IsDir()
+}
+
+func (d *Dep) gitCheckout() {
 	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
-	err = cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		log.Println("error checking out %s on %s", d.CheckoutSpec, d.Import)
+	}
+}
+
+func (d *Dep) hgCheckout() {
+	var cmd *exec.Cmd
+
+	if d.CheckoutFlag == CommitFlag {
+		cmd = exec.Command("hg", "update", "-c", d.CheckoutSpec)
+	} else {
+		cmd = exec.Command("hg", "checkout", d.CheckoutSpec)
+	}
+
+	err := cmd.Run()
 	if err != nil {
 		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
 	}
-	return cdHome()
 }
 
 func (d *Dep) cdSrc() error {
