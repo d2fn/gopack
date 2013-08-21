@@ -46,8 +46,10 @@ func main() {
 		func(d *Dep) {
 			fmtcolor(Gray, "updating %s\n", d.Import)
 			d.goGetUpdate()
-			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-			d.switchToBranchOrTag()
+			if d.CheckoutType() != "" {
+				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
+				d.switchToBranchOrTag()
+			}
 		})
 	// run the specified command
 	cmd := exec.Command("go", os.Args[1:]...)
@@ -59,15 +61,29 @@ func main() {
 	}
 }
 
+// Set the working directory.
+// It's the current directory by default.
+// It can be overriden setting the environment variable GOPACK_APP_CONFIG.
+func setPwd() {
+	var dir string
+	var err error
+
+	dir = os.Getenv("GOPACK_APP_CONFIG")
+	if dir == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			fail(err)
+		}
+	}
+
+	pwd = dir
+}
+
 // set GOPATH to the local vendor dir
 func setupEnv() {
-	dir, err := os.Getwd()
-	pwd = dir
-	if err != nil {
-		fail(err)
-	}
+	setPwd()
 	vendor := fmt.Sprintf("%s/%s", pwd, VendorDir)
-	err = os.Setenv("GOPATH", vendor)
+	err := os.Setenv("GOPATH", vendor)
 	if err != nil {
 		fail(err)
 	}
