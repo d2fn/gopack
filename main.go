@@ -35,30 +35,46 @@ func main() {
 	fmt.Println()
 	// localize GOPATH
 	setupEnv()
-	p, err := AnalyzeSourceTree(".")
+	loadDependencies(".")
+}
+
+func loadDependencies(root string) {
+	p, err := AnalyzeSourceTree(root)
 	if err != nil {
 		fail(err)
 	}
-	d := LoadDependencyModel(".")
-	failWith(d.Validate(p))
+	dependencies := LoadDependencyModel(root, NewGraph())
+	failWith(dependencies.Validate(p))
 	// prepare dependencies
-	d.VisitDeps(
-		func(d *Dep) {
-			fmtcolor(Gray, "updating %s\n", d.Import)
-			d.goGetUpdate()
-			if d.CheckoutType() != "" {
-				fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-				d.switchToBranchOrTag()
-			}
-		})
+	loadTransitiveDependencies(dependencies)
 	// run the specified command
+	runCommand()
+}
+
+func runCommand() {
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		fail(err)
 	}
+}
+
+func loadTransitiveDependencies(dependencies *Dependencies) {
+	dependencies.VisitDeps(
+		func(dep *Dep) {
+			fmtcolor(Gray, "updating %s\n", dep.Import)
+			dep.goGetUpdate()
+			if dep.CheckoutType() != "" {
+				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
+				dep.switchToBranchOrTag()
+			}
+			transitive := dep.LoadTransitiveDeps(dependencies.ImportGraph)
+			if transitive != nil {
+				loadTransitiveDependencies(transitive)
+			}
+		})
 }
 
 // Set the working directory.

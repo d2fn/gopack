@@ -28,7 +28,7 @@ func TestUnmanagedImport(t *testing.T) {
 }
 
 func findErrors(dir string, t *testing.T) []*ProjectError {
-	d := LoadDependencyModel(dir)
+	d := LoadDependencyModel(dir, NewGraph())
 	p, err := AnalyzeSourceTree(dir)
 	if err != nil {
 		t.Fatal(err)
