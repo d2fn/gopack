@@ -25,5 +25,5 @@ _testmain.go
 gopack
 errors
 
-.gopack/vendor/
+.gopack/
 
