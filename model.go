@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -20,10 +21,10 @@ const (
 )
 
 type Dependencies struct {
-	Imports   []string
-	Keys      []string
-	DepList   []*Dep
-	ImportMap map[string]*Dep
+	Imports     []string
+	Keys        []string
+	DepList     []*Dep
+	ImportGraph *Graph
 }
 
 type Dep struct {
@@ -34,25 +35,25 @@ type Dep struct {
 	CheckoutSpec string
 }
 
-func LoadDependencyModel(dir string) *Dependencies {
+func LoadDependencyModel(dir string, importGraph *Graph) *Dependencies {
 	deps := new(Dependencies)
+
 	path := fmt.Sprintf("%s/gopack.config", dir)
 	t, err := toml.LoadFile(path)
 	if err != nil {
 		fail(err)
 	}
+
 	depsTree := t.Get("deps").(*toml.TomlTree)
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
-	deps.ImportMap = make(map[string]*Dep)
+	deps.ImportGraph = importGraph
+
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := new(Dep)
 		d.Import = depTree.Get("import").(string)
-		if !strings.HasPrefix(d.Import, "github.com") {
-			failf("don't know how to manage this dependency, not a known git repo: %s\n", d.Import)
-		}
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
@@ -60,14 +61,14 @@ func LoadDependencyModel(dir string) *Dependencies {
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
-		deps.ImportMap[d.Import] = d
+		deps.ImportGraph.Insert(d)
 	}
 	return deps
 }
 
-func (d *Dependencies) IncludesDependency(importPath string) bool {
-	_, found := d.ImportMap[importPath]
-	return found
+func (d *Dependencies) IncludesDependency(importPath string) (*Node, bool) {
+	node := d.ImportGraph.Search(importPath)
+	return node, node != nil
 }
 
 func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
@@ -96,7 +97,11 @@ func (d *Dependencies) String() string {
 }
 
 func (d *Dep) String() string {
-	return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+	if d.CheckoutType() != "" {
+		return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+	} else {
+		return fmt.Sprintf("import = %s", d.Import)
+	}
 }
 
 func (d *Dep) CheckoutType() string {
@@ -122,19 +127,71 @@ func (d *Dep) switchToBranchOrTag() error {
 	if err != nil {
 		return err
 	}
+
+	scm, err := d.Scm()
+
+	switch {
+	case scm == "git":
+		d.gitCheckout()
+	case scm == "hg":
+		d.hgCheckout()
+	default:
+		log.Println(err)
+	}
+
+	return cdHome()
+}
+
+// Tell the scm where the dependency is hosted.
+func (d *Dep) Scm() (string, error) {
+	paths := []string{".git", ".hg"}
+
+	for _, scmPath := range paths {
+		if d.scmPath(path.Join(d.Src(), scmPath)) {
+			return strings.TrimLeft(scmPath, "."), nil
+		}
+	}
+
+	return "", fmt.Errorf("unknown scm for %s", d.Import)
+}
+
+func (d *Dep) scmPath(scmPath string) bool {
+	stat, err := os.Stat(scmPath)
+	if err != nil {
+		return false
+	}
+
+	return stat.IsDir()
+}
+
+func (d *Dep) gitCheckout() {
 	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		log.Println("error checking out %s on %s", d.CheckoutSpec, d.Import)
 	}
-	return cdHome()
+}
+
+func (d *Dep) hgCheckout() {
+	var cmd *exec.Cmd
+
+	if d.CheckoutFlag == CommitFlag {
+		cmd = exec.Command("hg", "update", "-c", d.CheckoutSpec)
+	} else {
+		cmd = exec.Command("hg", "checkout", d.CheckoutSpec)
+	}
+
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
+	}
 }
 
 func (d *Dep) cdSrc() error {
 	err := os.Chdir(d.Src())
 	if err != nil {
 		log.Print(err)
-		log.Println("couldn't cd to src dir for %s", d.Import)
+		log.Printf("couldn't cd to src dir for %s\n", d.Import)
 		return err
 	}
 	return nil
@@ -150,21 +207,35 @@ func (d *Dep) goGetUpdate() error {
 	return cmd.Run()
 }
 
-func (d *Dep) LoadTransitiveDeps() *Dependencies {
-	return new(Dependencies)
+func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
+	configPath := path.Join(d.Src(), "gopack.config")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		fmtcolor(Gray, "gopack.config missing for %s\n", d.Import)
+		return nil
+	}
+	return LoadDependencyModel(d.Src(), importGraph)
 }
 
 func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {
 	errors := []*ProjectError{}
+	includedDeps := make(map[string]*Dep)
+
 	for path, s := range p.ImportStatsByPath {
-		if s.Remote && !d.IncludesDependency(path) {
-			// report a validation error with the locations in source
-			// where an import is used but unmanaged in gopack.config
-			errors = append(errors, UnmanagedImportError(s))
+		node, found := d.IncludesDependency(path)
+		if s.Remote {
+			if found {
+				includedDeps[node.Dependency.Import] = node.Dependency
+			} else {
+				// report a validation error with the locations in source
+				// where an import is used but unmanaged in gopack.config
+				errors = append(errors, UnmanagedImportError(s))
+			}
 		}
 	}
+
 	for _, dep := range d.DepList {
-		if !p.IsImportUsed(dep.Import) {
+		_, found := includedDeps[dep.Import]
+		if !found && !p.IsImportUsed(dep.Import) {
 			errors = append(errors, UnusedDependencyError(dep.Import))
 		}
 	}

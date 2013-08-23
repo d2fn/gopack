@@ -22,60 +22,103 @@ const (
 )
 
 var (
-	pwd string
+	pwd        string
+	showColors = true
 )
 
 func main() {
+	if os.Getenv("GOPACK_SKIP_COLORS") == "1" {
+		showColors = false
+	}
+
 	fmtcolor(104, "/// g o p a c k ///")
 	fmt.Println()
 	// localize GOPATH
 	setupEnv()
-	p, err := AnalyzeSourceTree(".")
+	loadDependencies(".")
+}
+
+func loadDependencies(root string) {
+	p, err := AnalyzeSourceTree(root)
 	if err != nil {
 		fail(err)
 	}
-	d := LoadDependencyModel(".")
-	failWith(d.Validate(p))
+	dependencies := LoadDependencyModel(root, NewGraph())
+	failWith(dependencies.Validate(p))
 	// prepare dependencies
-	d.VisitDeps(
-		func(d *Dep) {
-			fmtcolor(Gray, "updating %s\n", d.Import)
-			d.goGetUpdate()
-			fmtcolor(Gray, "pointing %s at %s %s\n", d.Import, d.CheckoutType(), d.CheckoutSpec)
-			d.switchToBranchOrTag()
-		})
+	loadTransitiveDependencies(dependencies)
 	// run the specified command
+	runCommand()
+}
+
+func runCommand() {
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		fail(err)
 	}
 }
 
+func loadTransitiveDependencies(dependencies *Dependencies) {
+	dependencies.VisitDeps(
+		func(dep *Dep) {
+			fmtcolor(Gray, "updating %s\n", dep.Import)
+			dep.goGetUpdate()
+			if dep.CheckoutType() != "" {
+				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
+				dep.switchToBranchOrTag()
+			}
+			transitive := dep.LoadTransitiveDeps(dependencies.ImportGraph)
+			if transitive != nil {
+				loadTransitiveDependencies(transitive)
+			}
+		})
+}
+
+// Set the working directory.
+// It's the current directory by default.
+// It can be overriden setting the environment variable GOPACK_APP_CONFIG.
+func setPwd() {
+	var dir string
+	var err error
+
+	dir = os.Getenv("GOPACK_APP_CONFIG")
+	if dir == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			fail(err)
+		}
+	}
+
+	pwd = dir
+}
+
 // set GOPATH to the local vendor dir
 func setupEnv() {
-	dir, err := os.Getwd()
-	pwd = dir
-	if err != nil {
-		fail(err)
-	}
+	setPwd()
 	vendor := fmt.Sprintf("%s/%s", pwd, VendorDir)
-	err = os.Setenv("GOPATH", vendor)
+	err := os.Setenv("GOPATH", vendor)
 	if err != nil {
 		fail(err)
 	}
 }
 
 func fmtcolor(c uint8, s string, args ...interface{}) {
-	fmt.Printf("\033[%dm", c)
+	if showColors {
+		fmt.Printf("\033[%dm", c)
+	}
+
 	if len(args) > 0 {
 		fmt.Printf(s, args...)
 	} else {
 		fmt.Printf(s)
 	}
-	fmt.Printf(EndColor)
+
+	if showColors {
+		fmt.Printf(EndColor)
+	}
 }
 
 func logcolor(c uint8, s string, args ...interface{}) {

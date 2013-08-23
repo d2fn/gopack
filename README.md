@@ -2,7 +2,9 @@
 
 The [natural logarithm](https://en.wikipedia.org/wiki/Natural_logarithm) to Go's [e](http://en.wikipedia.org/wiki/E_(mathematical_constant). Simple package management for Go a la [rebar](https://github.com/basho/rebar).
 
-A configuration file tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at _immutable_ code.
+A configuration file named `gopack.config` tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at _immutable_ code.
+
+##### gopack.config
 
 ```toml
 [deps.memcache]
@@ -37,7 +39,7 @@ go get github.com/pelletier/go-toml
 go build
 ```
 
-Then copy the ```gopack``` binary to your project directory and invoke just as you would go. Make sure the current directory is on your path or place the ```gp``` binary elsewhere on your path.
+Then copy the ```gopack``` binary to your project directory and invoke just as you would ```go```. Make sure the current directory is on your path or place the ```gp``` binary elsewhere on your path.
 ```
 cp gopack ~/projects/mygoproject/gp
 cd ~/projects/myproject
