@@ -17,7 +17,7 @@ type ProjectError struct {
 func UnusedDependencyError(importPath string) *ProjectError {
 	return &ProjectError{
 		UnusedDep,
-		fmt.Sprintf("%s in gopack.config is unused", importPath),
+		fmt.Sprintf("%s in gopack.config is unused\n", importPath),
 	}
 }
 
