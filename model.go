@@ -144,12 +144,22 @@ func (d *Dep) switchToBranchOrTag() error {
 
 // Tell the scm where the dependency is hosted.
 func (d *Dep) Scm() (string, error) {
-	paths := []string{".git", ".hg"}
+	parts := strings.Split(d.Import, "/")
+	initPath := d.Src()
 
-	for _, scmPath := range paths {
-		if d.scmPath(path.Join(d.Src(), scmPath)) {
-			return strings.TrimLeft(scmPath, "."), nil
+	// Traverse the source tree backwards until
+	// it finds the right directory
+	// or it arrives to the base of the import.
+	for _, _ = range parts {
+		if d.scmPath(path.Join(initPath, ".git")) {
+			return "git", nil
 		}
+
+		if d.scmPath(path.Join(initPath, ".hg")) {
+			return "hg", nil
+		}
+
+		initPath = path.Join(initPath, "..")
 	}
 
 	return "", fmt.Errorf("unknown scm for %s", d.Import)
