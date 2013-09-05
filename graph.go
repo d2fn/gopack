@@ -16,8 +16,7 @@ type Node struct {
 }
 
 func NewGraph() *Graph {
-	graph := &Graph{Nodes: make(map[string]*Node)}
-	return graph
+	return &Graph{Nodes: make(map[string]*Node)}
 }
 
 func (graph *Graph) Insert(dependency *Dep) {

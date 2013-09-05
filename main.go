@@ -43,10 +43,12 @@ func loadDependencies(root string) {
 	if err != nil {
 		fail(err)
 	}
-	dependencies := LoadDependencyModel(root, NewGraph())
-	failWith(dependencies.Validate(p))
-	// prepare dependencies
-	loadTransitiveDependencies(dependencies)
+	dependencies := LoadConfiguration(root, NewGraph())
+	if dependencies != nil {
+		failWith(dependencies.Validate(p))
+		// prepare dependencies
+		loadTransitiveDependencies(dependencies)
+	}
 	// run the specified command
 	runCommand()
 }

@@ -35,16 +35,20 @@ type Dep struct {
 	CheckoutSpec string
 }
 
-func LoadDependencyModel(dir string, importGraph *Graph) *Dependencies {
+func LoadConfiguration(dir string, importGraph *Graph) *Dependencies {
+	config := NewConfig(dir)
+	config.Init()
+
+	if config.DepsTree != nil {
+		return LoadDependencyModel(config.DepsTree, importGraph)
+	} else {
+		return nil
+	}
+}
+
+func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
 	deps := new(Dependencies)
 
-	path := fmt.Sprintf("%s/gopack.config", dir)
-	t, err := toml.LoadFile(path)
-	if err != nil {
-		fail(err)
-	}
-
-	depsTree := t.Get("deps").(*toml.TomlTree)
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
@@ -223,7 +227,8 @@ func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
 		fmtcolor(Gray, "gopack.config missing for %s\n", d.Import)
 		return nil
 	}
-	return LoadDependencyModel(d.Src(), importGraph)
+	config := NewConfig(d.Src())
+	return LoadDependencyModel(config.DepsTree, importGraph)
 }
 
 func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {
