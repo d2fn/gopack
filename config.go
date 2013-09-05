@@ -34,7 +34,7 @@ func NewConfig(dir string) *Config {
 	return config
 }
 
-func (c *Config) Init() {
+func (c *Config) Init() string {
 	src := fmt.Sprintf("%s/%s/src", pwd, VendorDir)
 	os.MkdirAll(src, 0755)
 
@@ -49,4 +49,6 @@ func (c *Config) Init() {
 			fail(err)
 		}
 	}
+
+	return c.Repository
 }

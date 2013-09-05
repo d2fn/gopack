@@ -37,7 +37,12 @@ type Dep struct {
 
 func LoadConfiguration(dir string, importGraph *Graph) *Dependencies {
 	config := NewConfig(dir)
-	config.Init()
+	repo := config.Init()
+	if repo != "" {
+		d := new(Dep)
+		d.Import = repo
+		importGraph.Insert(d)
+	}
 
 	if config.DepsTree != nil {
 		return LoadDependencyModel(config.DepsTree, importGraph)
