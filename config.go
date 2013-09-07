@@ -45,7 +45,7 @@ func (c *Config) InitRepo(importGraph *Graph) {
 
 		repo := fmt.Sprintf("%s/%s", src, c.Repository)
 		err := os.Symlink(pwd, repo)
-		if err != nil {
+		if !os.IsExist(err) {
 			fail(err)
 		}
 
