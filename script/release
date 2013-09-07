@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+mkdir -p dist/pkg
+mkdir -p dist/vendor
+cd dist
+
+export GOPATH=$(cd vendor && pwd)
+PKG=$(cd pkg && pwd)
+
+if [ ! -d golang-crosscompile ]; then
+  git clone https://github.com/davecheney/golang-crosscompile
+fi
+
+source golang-crosscompile/crosscompile.bash
+
+if [ $# -eq 1 ] && [ $1 == "--crosscompile-go" ]; then
+  echo "Cross compiling Go"
+  go-crosscompile-build-all > /dev/null
+fi
+
+for PLATFORM in $PLATFORMS; do
+  GOOS=${PLATFORM%/*}
+  GOARCH=${PLATFORM#*/}
+
+  echo "Building gopack for $GOOS $GOARCH"
+  go-$GOOS-$GOARCH get -u github.com/pelletier/go-toml
+  go-$GOOS-$GOARCH build -o $PKG/gp-$GOOS-$GOARCH ..
+done
+
+echo "Release binaries at $PKG"
+
+cd ..
