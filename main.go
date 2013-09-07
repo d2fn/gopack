@@ -57,11 +57,12 @@ func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 
+	var dependencies *Dependencies
 	if config.DepsTree != nil {
-		return LoadDependencyModel(config.DepsTree, importGraph)
-	} else {
-		return nil
+		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
 	}
+
+	return dependencies
 }
 
 func runCommand() {
