@@ -7,6 +7,7 @@ import (
 )
 
 func TestSetPwdDefault(t *testing.T) {
+	os.Setenv("GOPACK_APP_CONFIG", "")
 	setPwd()
 	dir, _ := os.Getwd()
 	if pwd != dir {

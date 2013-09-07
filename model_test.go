@@ -85,12 +85,11 @@ func TestTransitiveDependencies(t *testing.T) {
 	setupTestPwd()
 	setupEnv()
 
-	file, err := os.Create(path.Join(pwd, "gopack.config"))
-	check(err)
-	_, err = file.WriteString("[deps.testgopack]\n")
-	_, err = file.WriteString("  import = \"github.com/calavera/testGoPack\"\n")
-	file.Sync()
-	file.Close()
+	fixture := `
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`
+	createFixtureConfig(pwd, fixture)
 
 	config := NewConfig(pwd)
 	dependencies := LoadDependencyModel(config.DepsTree, NewGraph())
@@ -102,27 +101,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	}
 
 	dep = path.Join(pwd, VendorDir, "src", "github.com", "d2fn", "gopack")
-	if _, err = os.Stat(dep); os.IsNotExist(err) {
+	if _, err := os.Stat(dep); os.IsNotExist(err) {
 		t.Errorf("Expected dependency github.com/d2fn/gopack to be in vendor %s\n", pwd)
-	}
-}
-
-func TestRepositoryLink(t *testing.T) {
-	setupTestPwd()
-	setupEnv()
-
-	file, err := os.Create(path.Join(pwd, "gopack.config"))
-	check(err)
-	_, err = file.WriteString("repo = \"github.com/d2fn/gopack\"\n")
-	file.Sync()
-	file.Close()
-
-	LoadConfiguration(pwd, NewGraph())
-
-	dep := path.Join(pwd, VendorDir, "src", "github.com", "d2fn", "gopack")
-	stat, err := os.Stat(dep)
-
-	if os.IsNotExist(err) || (stat.Mode()&os.ModeSymlink != 0) {
-		t.Errorf("Expected repository github.com/d2fn/gopack to be linked in vendor %s\n", pwd)
 	}
 }

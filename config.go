@@ -34,11 +34,11 @@ func NewConfig(dir string) *Config {
 	return config
 }
 
-func (c *Config) Init() string {
-	src := fmt.Sprintf("%s/%s/src", pwd, VendorDir)
-	os.MkdirAll(src, 0755)
-
+func (c *Config) InitRepo(importGraph *Graph) {
 	if c.Repository != "" {
+		src := fmt.Sprintf("%s/%s/src", pwd, VendorDir)
+		os.MkdirAll(src, 0755)
+
 		dir := filepath.Dir(c.Repository)
 		base := fmt.Sprintf("%s/%s", src, dir)
 		os.MkdirAll(base, 0755)
@@ -48,7 +48,8 @@ func (c *Config) Init() string {
 		if err != nil {
 			fail(err)
 		}
-	}
 
-	return c.Repository
+		dependency := NewDependency(c.Repository)
+		importGraph.Insert(dependency)
+	}
 }

@@ -35,20 +35,8 @@ type Dep struct {
 	CheckoutSpec string
 }
 
-func LoadConfiguration(dir string, importGraph *Graph) *Dependencies {
-	config := NewConfig(dir)
-	repo := config.Init()
-	if repo != "" {
-		d := new(Dep)
-		d.Import = repo
-		importGraph.Insert(d)
-	}
-
-	if config.DepsTree != nil {
-		return LoadDependencyModel(config.DepsTree, importGraph)
-	} else {
-		return nil
-	}
+func NewDependency(repo string) *Dep {
+	return &Dep{Import: repo}
 }
 
 func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
@@ -61,15 +49,18 @@ func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependenc
 
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
-		d := new(Dep)
-		d.Import = depTree.Get("import").(string)
+		d := NewDependency(depTree.Get("import").(string))
+
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
+
 		d.CheckValidity()
+
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
+
 		deps.ImportGraph.Insert(d)
 	}
 	return deps

@@ -43,7 +43,7 @@ func loadDependencies(root string) {
 	if err != nil {
 		fail(err)
 	}
-	dependencies := LoadConfiguration(root, NewGraph())
+	dependencies := loadConfiguration(root, NewGraph())
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
@@ -51,6 +51,17 @@ func loadDependencies(root string) {
 	}
 	// run the specified command
 	runCommand()
+}
+
+func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
+	config := NewConfig(dir)
+	config.InitRepo(importGraph)
+
+	if config.DepsTree != nil {
+		return LoadDependencyModel(config.DepsTree, importGraph)
+	} else {
+		return nil
+	}
 }
 
 func runCommand() {
