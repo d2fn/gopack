@@ -35,16 +35,13 @@ type Dep struct {
 	CheckoutSpec string
 }
 
-func LoadDependencyModel(dir string, importGraph *Graph) *Dependencies {
+func NewDependency(repo string) *Dep {
+	return &Dep{Import: repo}
+}
+
+func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
 	deps := new(Dependencies)
 
-	path := fmt.Sprintf("%s/gopack.config", dir)
-	t, err := toml.LoadFile(path)
-	if err != nil {
-		fail(err)
-	}
-
-	depsTree := t.Get("deps").(*toml.TomlTree)
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
@@ -52,15 +49,18 @@ func LoadDependencyModel(dir string, importGraph *Graph) *Dependencies {
 
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
-		d := new(Dep)
-		d.Import = depTree.Get("import").(string)
+		d := NewDependency(depTree.Get("import").(string))
+
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
+
 		d.CheckValidity()
+
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
 		deps.DepList[i] = d
+
 		deps.ImportGraph.Insert(d)
 	}
 	return deps
@@ -223,7 +223,8 @@ func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
 		fmtcolor(Gray, "gopack.config missing for %s\n", d.Import)
 		return nil
 	}
-	return LoadDependencyModel(d.Src(), importGraph)
+	config := NewConfig(d.Src())
+	return LoadDependencyModel(config.DepsTree, importGraph)
 }
 
 func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {

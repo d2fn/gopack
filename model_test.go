@@ -85,14 +85,14 @@ func TestTransitiveDependencies(t *testing.T) {
 	setupTestPwd()
 	setupEnv()
 
-	file, err := os.Create(path.Join(pwd, "gopack.config"))
-	check(err)
-	_, err = file.WriteString("[deps.testgopack]\n")
-	_, err = file.WriteString("  import = \"github.com/calavera/testGoPack\"\n")
-	file.Sync()
-	file.Close()
+	fixture := `
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`
+	createFixtureConfig(pwd, fixture)
 
-	dependencies := LoadDependencyModel(pwd, NewGraph())
+	config := NewConfig(pwd)
+	dependencies := LoadDependencyModel(config.DepsTree, NewGraph())
 	loadTransitiveDependencies(dependencies)
 
 	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")
@@ -101,7 +101,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	}
 
 	dep = path.Join(pwd, VendorDir, "src", "github.com", "d2fn", "gopack")
-	if _, err = os.Stat(dep); os.IsNotExist(err) {
+	if _, err := os.Stat(dep); os.IsNotExist(err) {
 		t.Errorf("Expected dependency github.com/d2fn/gopack to be in vendor %s\n", pwd)
 	}
 }

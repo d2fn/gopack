@@ -43,12 +43,26 @@ func loadDependencies(root string) {
 	if err != nil {
 		fail(err)
 	}
-	dependencies := LoadDependencyModel(root, NewGraph())
-	failWith(dependencies.Validate(p))
-	// prepare dependencies
-	loadTransitiveDependencies(dependencies)
+	dependencies := loadConfiguration(root, NewGraph())
+	if dependencies != nil {
+		failWith(dependencies.Validate(p))
+		// prepare dependencies
+		loadTransitiveDependencies(dependencies)
+	}
 	// run the specified command
 	runCommand()
+}
+
+func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
+	config := NewConfig(dir)
+	config.InitRepo(importGraph)
+
+	var dependencies *Dependencies
+	if config.DepsTree != nil {
+		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
+	}
+
+	return dependencies
 }
 
 func runCommand() {

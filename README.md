@@ -19,6 +19,20 @@ branch = "1.0rc2"
 import = "github.com/pelletier/go-toml"
 commit = "23d36c08ab90f4957ae8e7d781907c368f5454dd"
 ```
+Inside the configuration file you can also specify your project's repository name and it will be linked before pulling dependencies.
+For instance, let's say you have a reference to a subdirectory from your own project like this:
+
+```go
+import "github.com/login/repo/dir"
+```
+
+You can declare it's repository name and it won't be pulled from the remote repo:
+
+```toml
+repo = "github.com/login/repo"
+
+# Put other dependencies here.
+```
 
 Then simply run, install, and test your code much as you would have with the ```go``` command. Just replace ```go``` with ```gp```.
 
