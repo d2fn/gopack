@@ -178,7 +178,7 @@ func (d *Dep) gitCheckout() {
 	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
 	err := cmd.Run()
 	if err != nil {
-		log.Println("error checking out %s on %s", d.CheckoutSpec, d.Import)
+		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
 	}
 }
 
