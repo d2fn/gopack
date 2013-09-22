@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	GopackVersion      = "1.0.0.dev"
+	GopackVersion      = "0.2.0.dev"
 	GopackDir          = ".gopack"
 	GopackTestProjects = ".gopack/test-projects"
 	VendorDir          = ".gopack/vendor"
