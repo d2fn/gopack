@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	GopackVersion      = "0.2.0.dev"
 	GopackDir          = ".gopack"
 	GopackTestProjects = ".gopack/test-projects"
 	VendorDir          = ".gopack/vendor"
@@ -66,6 +67,10 @@ func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
 }
 
 func runCommand() {
+	if os.Args[1] == "version" {
+		fmt.Printf("gopack version %s\n", GopackVersion)
+	}
+
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
