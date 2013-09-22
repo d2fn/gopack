@@ -1,13 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
 	"github.com/pelletier/go-toml"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
 type Config struct {
+	Checksum []byte
+	// Path to the configuration file.
+	Path string
 	// Name of your repository "github.com/d2fn/gopack" for instance.
 	Repository string
 	// Dependencies tree
@@ -15,14 +21,13 @@ type Config struct {
 }
 
 func NewConfig(dir string) *Config {
-	path := fmt.Sprintf("%s/gopack.config", dir)
+	config := &Config{Path: fmt.Sprintf("%s/gopack.config", dir)}
 
-	t, err := toml.LoadFile(path)
+	t, err := toml.LoadFile(config.Path)
 	if err != nil {
 		fail(err)
 	}
 
-	config := new(Config)
 	if deps := t.Get("deps"); deps != nil {
 		config.DepsTree = deps.(*toml.TomlTree)
 	}
@@ -45,11 +50,47 @@ func (c *Config) InitRepo(importGraph *Graph) {
 
 		repo := fmt.Sprintf("%s/%s", src, c.Repository)
 		err := os.Symlink(pwd, repo)
-		if !os.IsExist(err) {
+		if err != nil && !os.IsExist(err) {
 			fail(err)
 		}
 
 		dependency := NewDependency(c.Repository)
 		importGraph.Insert(dependency)
 	}
+}
+
+func (c *Config) FetchDependencies() bool {
+	return c.DepsTree != nil && c.modifiedChecksum()
+}
+
+func (c *Config) modifiedChecksum() bool {
+	dat, err := ioutil.ReadFile(c.checksumPath())
+	return (err != nil && os.IsNotExist(err)) || !bytes.Equal(dat, c.checksum())
+}
+
+func (c *Config) WriteChecksum() {
+	os.MkdirAll(filepath.Join(pwd, GopackDir), 0755)
+	err := ioutil.WriteFile(c.checksumPath(), c.checksum(), 0644)
+
+	if err != nil {
+		fail(err)
+	}
+}
+
+func (c *Config) checksumPath() string {
+	return filepath.Join(pwd, GopackChecksum)
+}
+
+func (c *Config) checksum() []byte {
+	if c.Checksum == nil {
+		dat, err := ioutil.ReadFile(c.Path)
+		if err != nil {
+			fail(err)
+		}
+
+		h := md5.New()
+		h.Write(dat)
+		c.Checksum = h.Sum(nil)
+	}
+	return c.Checksum
 }

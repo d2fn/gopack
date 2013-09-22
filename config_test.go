@@ -1,32 +1,32 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 )
 
 func createFixtureConfig(dir string, config string) {
-	file, err := os.Create(path.Join(dir, "gopack.config"))
+	err := ioutil.WriteFile(path.Join(dir, "gopack.config"), []byte(config), 0644)
 	check(err)
-	defer file.Close()
-
-	_, err = file.WriteString(config)
-	file.Sync()
 }
 
-func TestNewConfig(t *testing.T) {
+func setupTestConfig(fixture string) *Config {
 	setupTestPwd()
 	setupEnv()
 
-	fixture := `
+	createFixtureConfig(pwd, fixture)
+	return NewConfig(pwd)
+}
+
+func TestNewConfig(t *testing.T) {
+	config := setupTestConfig(`
 repo = "github.com/d2fn/gopack"
 
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
-`
-	createFixtureConfig(pwd, fixture)
-	config := NewConfig(pwd)
+`)
 
 	if config.Repository == "" {
 		t.Error("Expected repository to not be empty.")
@@ -38,20 +38,15 @@ repo = "github.com/d2fn/gopack"
 }
 
 func TestInitRepoWithoutRepo(t *testing.T) {
-	setupTestPwd()
-	setupEnv()
-
-	fixture := `
+	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
-`
-	createFixtureConfig(pwd, fixture)
+`)
 
 	graph := NewGraph()
-	config := NewConfig(pwd)
 	config.InitRepo(graph)
 
-  src := path.Join(pwd, VendorDir, "src")
+	src := path.Join(pwd, VendorDir, "src")
 	_, err := os.Stat(src)
 
 	if !os.IsNotExist(err) {
@@ -60,14 +55,9 @@ func TestInitRepoWithoutRepo(t *testing.T) {
 }
 
 func TestInitRepo(t *testing.T) {
-	setupTestPwd()
-	setupEnv()
-
-	fixture := `repo = "github.com/d2fn/gopack"`
-	createFixtureConfig(pwd, fixture)
+	config := setupTestConfig(`repo = "github.com/d2fn/gopack"`)
 
 	graph := NewGraph()
-	config := NewConfig(pwd)
 	config.InitRepo(graph)
 
 	dep := path.Join(pwd, VendorDir, "src", "github.com", "d2fn", "gopack")
@@ -82,4 +72,62 @@ func TestInitRepo(t *testing.T) {
 	}
 }
 
+func TestWriteChecksum(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`)
 
+	config.WriteChecksum()
+
+	path := path.Join(pwd, GopackChecksum)
+	_, err := ioutil.ReadFile(path)
+	if err != nil && os.IsNotExist(err) {
+		t.Errorf("Expected checksum file %s to exist", path)
+	}
+}
+
+func TestFetchDependenciesWithoutChecksum(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`)
+
+	if !config.FetchDependencies() {
+		t.Errorf("Expected fetch dependencies to be true when there is no checksum")
+	}
+}
+
+func TestFetchDependenciesWithoutChanges(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`)
+	config.WriteChecksum()
+
+	if config.FetchDependencies() {
+		t.Errorf("Expected fetch dependencies to be false when the checksum doesn't change")
+	}
+}
+
+func TestFetchDependenciesWithChanges(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+`)
+
+	config.WriteChecksum()
+	config.Checksum = nil
+
+	fixture := `
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+[deps.foo]
+  import = "github.com/calavera/foo"
+`
+	createFixtureConfig(pwd, fixture)
+
+	if !config.FetchDependencies() {
+		t.Errorf("Expected fetch dependencies to be true when the checksum changes")
+	}
+}

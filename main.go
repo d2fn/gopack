@@ -9,6 +9,7 @@ import (
 
 const (
 	GopackDir          = ".gopack"
+	GopackChecksum     = ".gopack/checksum"
 	GopackTestProjects = ".gopack/test-projects"
 	VendorDir          = ".gopack/vendor"
 )
@@ -43,26 +44,28 @@ func loadDependencies(root string) {
 	if err != nil {
 		fail(err)
 	}
-	dependencies := loadConfiguration(root, NewGraph())
+
+	config, dependencies := loadConfiguration(root, NewGraph())
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
+		config.WriteChecksum()
 	}
 	// run the specified command
 	runCommand()
 }
 
-func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
+func loadConfiguration(dir string, importGraph *Graph) (*Config, *Dependencies) {
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 
 	var dependencies *Dependencies
-	if config.DepsTree != nil {
+	if config.FetchDependencies() {
 		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
 	}
 
-	return dependencies
+	return config, dependencies
 }
 
 func runCommand() {
