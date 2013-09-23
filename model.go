@@ -105,14 +105,13 @@ func (d *Dep) String() string {
 }
 
 func (d *Dep) CheckoutType() string {
-	if d.CheckoutFlag == BranchFlag {
+	switch d.CheckoutFlag {
+	case BranchFlag:
 		return "branch"
-	}
-	if d.CheckoutFlag == CommitFlag {
-		return "commit"
-	}
-	if d.CheckoutFlag == TagFlag {
+	case TagFlag:
 		return "tag"
+	case CommitFlag:
+		return "commit"
 	}
 	return ""
 }
@@ -130,39 +129,39 @@ func (d *Dep) switchToBranchOrTag() error {
 
 	scm, err := d.Scm()
 
-	switch {
-	case scm == "git":
-		d.gitCheckout()
-	case scm == "hg":
-		d.hgCheckout()
-	default:
+	if err != nil {
 		log.Println(err)
+	} else {
+		err = scm.Checkout(d)
+
+		if err != nil {
+			log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
+		}
 	}
 
 	return cdHome()
 }
 
 // Tell the scm where the dependency is hosted.
-func (d *Dep) Scm() (string, error) {
+func (d *Dep) Scm() (Scm, error) {
 	parts := strings.Split(d.Import, "/")
 	initPath := d.Src()
+	scms := map[string]Scm{".git": Git{}, ".hg": Hg{}, ".svn": Svn{}}
 
 	// Traverse the source tree backwards until
 	// it finds the right directory
 	// or it arrives to the base of the import.
 	for _, _ = range parts {
-		if d.scmPath(path.Join(initPath, ".git")) {
-			return "git", nil
-		}
-
-		if d.scmPath(path.Join(initPath, ".hg")) {
-			return "hg", nil
+		for key, scm := range scms {
+			if d.scmPath(path.Join(initPath, key)) {
+				return scm, nil
+			}
 		}
 
 		initPath = path.Join(initPath, "..")
 	}
 
-	return "", fmt.Errorf("unknown scm for %s", d.Import)
+	return nil, fmt.Errorf("unknown scm for %s", d.Import)
 }
 
 func (d *Dep) scmPath(scmPath string) bool {
@@ -172,29 +171,6 @@ func (d *Dep) scmPath(scmPath string) bool {
 	}
 
 	return stat.IsDir()
-}
-
-func (d *Dep) gitCheckout() {
-	cmd := exec.Command("git", "checkout", d.CheckoutSpec)
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
-	}
-}
-
-func (d *Dep) hgCheckout() {
-	var cmd *exec.Cmd
-
-	if d.CheckoutFlag == CommitFlag {
-		cmd = exec.Command("hg", "update", "-c", d.CheckoutSpec)
-	} else {
-		cmd = exec.Command("hg", "checkout", d.CheckoutSpec)
-	}
-
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("error checking out %s on %s\n", d.CheckoutSpec, d.Import)
-	}
 }
 
 func (d *Dep) cdSrc() error {

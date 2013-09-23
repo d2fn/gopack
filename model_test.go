@@ -42,7 +42,7 @@ func TestGit(t *testing.T) {
 	dep := createScmDep(".git", "github.com/d2fn/gopack")
 
 	scm, err := dep.Scm()
-	if scm != "git" {
+	if _, ok := scm.(Git); !ok {
 		t.Error("Expected scm to be git but it was %s.\n%v", scm, err)
 	}
 }
@@ -53,7 +53,7 @@ func TestHg(t *testing.T) {
 	dep := createScmDep(".hg", "code.google.com/p/go")
 
 	scm, err := dep.Scm()
-	if scm != "hg" {
+	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
 }
@@ -61,11 +61,11 @@ func TestHg(t *testing.T) {
 func TestUnknownScm(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".svn", "foo/bar/baz")
+	dep := createScmDep(".svn", "code.google.com/p/project")
 
 	scm, err := dep.Scm()
-	if err == nil {
-		t.Errorf("Expected unknown scm but it was %s", scm)
+	if _, ok := scm.(Svn); !ok {
+		t.Errorf("Expected scm to be svn but it was %s.\n%v", scm, err)
 	}
 }
 
@@ -76,7 +76,7 @@ func TestSubPackages(t *testing.T) {
 	dep.Import = "code.google.com/p/go/path"
 
 	scm, err := dep.Scm()
-	if scm != "hg" {
+	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
 }
