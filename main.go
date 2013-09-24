@@ -32,11 +32,14 @@ func main() {
 		showColors = false
 	}
 
-	fmtcolor(104, "/// g o p a c k ///")
-	fmt.Println()
 	// localize GOPATH
 	setupEnv()
 	loadDependencies(".")
+}
+
+func announceGopack() {
+	fmtcolor(104, "/// g o p a c k ///")
+	fmt.Println()
 }
 
 func loadDependencies(root string) {
@@ -62,6 +65,7 @@ func loadConfiguration(dir string, importGraph *Graph) (*Config, *Dependencies) 
 
 	var dependencies *Dependencies
 	if config.FetchDependencies() {
+		announceGopack()
 		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
 	}
 
