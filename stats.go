@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -89,6 +90,20 @@ func (ps *ProjectStats) foundImport(fs *token.FileSet, i *ast.ImportSpec, path s
 func (ps *ProjectStats) IsImportUsed(importPath string) bool {
 	_, used := ps.ImportStatsByPath[importPath]
 	return used
+}
+
+func (ps *ProjectStats) Summary() string {
+	lines := []string{}
+	for k, v := range ps.ImportStatsByPath {
+		if v.Remote {
+			lines = append(lines, fmt.Sprintf("[R] %s:%d", k, len(v.ReferencePositions)))
+		} else {
+			lines = append(lines, fmt.Sprintf("[S] %s:%d", k, len(v.ReferencePositions)))
+		}
+	}
+	sort.Strings(lines)
+
+	return fmt.Sprintf("Import stats summary:\n\n* %s\n\n%s", strings.Join(lines, "\n* "), "[R] Remotes, [S] Stdlib")
 }
 
 func NewImportStats(importPath string, pos token.Position) *ImportStats {

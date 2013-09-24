@@ -159,3 +159,33 @@ import "fmt"
 		t.Errorf("Expected os to not be used\n")
 	}
 }
+
+func TestStatsSummary(t *testing.T) {
+	setupTestPwd()
+
+	createSourceFixture(pwd, "foo.go", `package main
+import "github.com/pelletier/go-toml"
+`)
+
+	createSourceFixture(pwd, "bar.go", `package main
+import "fmt"
+import "github.com/pelletier/go-toml"
+`)
+
+	stats, err := AnalyzeSourceTree(pwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := `Import stats summary:
+
+* [R] github.com/pelletier/go-toml:2
+* [S] fmt:1
+
+[R] Remotes, [S] Stdlib`
+
+	summary := stats.Summary()
+	if summary != expected {
+		t.Errorf("Expected summary to be \n%s \nbut it was \n%s", expected, summary)
+	}
+}

@@ -50,8 +50,13 @@ func loadDependencies(root string) {
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
 	}
-	// run the specified command
-	runCommand()
+
+	if os.Args[1] == "stats" {
+		fmt.Println(p.Summary())
+	} else {
+		// run the specified command
+		runCommand()
+	}
 }
 
 func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
