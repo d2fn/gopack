@@ -36,40 +36,44 @@ func main() {
 	fmt.Println()
 	// localize GOPATH
 	setupEnv()
-	loadDependencies(".")
+
+  deps := loadDependencies(".")
+
+	// run the specified command
+	runCommand(deps)
 }
 
-func loadDependencies(root string) {
+func loadDependencies(root string) *Dependencies {
 	p, err := AnalyzeSourceTree(root)
 	if err != nil {
 		fail(err)
 	}
-	dependencies := loadConfiguration(root, NewGraph())
+	dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
 	}
-	// run the specified command
-	runCommand()
+
+  return dependencies
 }
 
-func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
+func loadConfiguration(dir string) *Dependencies {
+  importGraph := NewGraph()
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
-
-	var dependencies *Dependencies
-	if config.DepsTree != nil {
-		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
-	}
-
-	return dependencies
+	return LoadDependencyModel(config.DepsTree, importGraph)
 }
 
-func runCommand() {
-	if os.Args[1] == "version" {
+func runCommand(deps *Dependencies) {
+  first := os.Args[1]
+	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
-	}
+	} else if first == "--dependency-tree" {
+    fmt.Printf("showing dependency tree info\n")
+    deps.PrintDependencyTree()
+    os.Exit(0)
+  }
 
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout

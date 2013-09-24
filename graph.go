@@ -21,7 +21,6 @@ func NewGraph() *Graph {
 
 func (graph *Graph) Insert(dependency *Dep) {
 	keys := strings.Split(dependency.Import, "/")
-
 	graph.Nodes[keys[0]] = deepInsert(graph.Nodes, keys, dependency)
 }
 
@@ -61,3 +60,19 @@ func deepInsert(nodes map[string]*Node, keys []string, dependency *Dep) *Node {
 
 	return node
 }
+
+func (graph *Graph) PreOrderVisit(fn func(n *Node, depth int)) {
+  for _, node := range graph.Nodes {
+    node.PreOrderVisit(fn, 0)
+  }
+}
+
+func (parent *Node) PreOrderVisit(fn func(n *Node, depth int), depth int) {
+  for _, node := range parent.Nodes {
+    fn(node, depth)
+    if !node.Leaf {
+      node.PreOrderVisit(fn, depth+1)
+    }
+  }
+}
+
