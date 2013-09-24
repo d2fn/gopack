@@ -169,6 +169,7 @@ import "github.com/pelletier/go-toml"
 
 	createSourceFixture(pwd, "bar.go", `package main
 import "fmt"
+import "./foo"
 import "github.com/pelletier/go-toml"
 `)
 
@@ -179,10 +180,11 @@ import "github.com/pelletier/go-toml"
 
 	expected := `Import stats summary:
 
+* [L] ./foo:1
 * [R] github.com/pelletier/go-toml:2
 * [S] fmt:1
 
-[R] Remotes, [S] Stdlib`
+[L] Local, [R] Remote, [S] Stdlib`
 
 	summary := stats.Summary()
 	if summary != expected {

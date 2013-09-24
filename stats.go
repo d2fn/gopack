@@ -97,13 +97,15 @@ func (ps *ProjectStats) Summary() string {
 	for k, v := range ps.ImportStatsByPath {
 		if v.Remote {
 			lines = append(lines, fmt.Sprintf("[R] %s:%d", k, len(v.ReferencePositions)))
+		} else if strings.HasPrefix(k, ".") {
+			lines = append(lines, fmt.Sprintf("[L] %s:%d", k, len(v.ReferencePositions)))
 		} else {
 			lines = append(lines, fmt.Sprintf("[S] %s:%d", k, len(v.ReferencePositions)))
 		}
 	}
 	sort.Strings(lines)
 
-	return fmt.Sprintf("Import stats summary:\n\n* %s\n\n%s", strings.Join(lines, "\n* "), "[R] Remotes, [S] Stdlib")
+	return fmt.Sprintf("Import stats summary:\n\n* %s\n\n%s", strings.Join(lines, "\n* "), "[L] Local, [R] Remote, [S] Stdlib")
 }
 
 func NewImportStats(importPath string, pos token.Position) *ImportStats {
