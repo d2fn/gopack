@@ -36,27 +36,25 @@ func main() {
 	// localize GOPATH
 	setupEnv()
 
-	stats, deps := loadDependencies(".")
+	p, err := AnalyzeSourceTree(".")
+	if err != nil {
+		fail(err)
+	}
 
-	if os.Args[1] == "stats" {
-		stats.PrintSummary()
+	deps := loadDependencies(".", p)
+
+	first := os.Args[1]
+	if first == "dependencytree" {
+		deps.PrintDependencyTree()
+	} else if first == "stats" {
+		p.PrintSummary()
 	} else {
 		// run the specified command
 		runCommand(deps)
 	}
 }
 
-func announceGopack() {
-	fmtcolor(104, "/// g o p a c k ///")
-	fmt.Println()
-}
-
-func loadDependencies(root string) (*ProjectStats, *Dependencies) {
-	p, err := AnalyzeSourceTree(root)
-	if err != nil {
-		fail(err)
-	}
-
+func loadDependencies(root string, p *ProjectStats) *Dependencies {
 	config, dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
@@ -65,7 +63,7 @@ func loadDependencies(root string) (*ProjectStats, *Dependencies) {
 		config.WriteChecksum()
 	}
 
-	return p, dependencies
+	return dependencies
 }
 
 func loadConfiguration(dir string) (*Config, *Dependencies) {
@@ -88,7 +86,6 @@ func runCommand(deps *Dependencies) {
 		fmt.Printf("gopack version %s\n", GopackVersion)
 	} else if first == "--dependency-tree" {
 		fmt.Printf("showing dependency tree info\n")
-		deps.PrintDependencyTree()
 		os.Exit(0)
 	}
 
@@ -193,4 +190,9 @@ func failWith(errors []*ProjectError) {
 		fmt.Println()
 		os.Exit(len(errors))
 	}
+}
+
+func announceGopack() {
+	fmtcolor(104, "/// g o p a c k ///")
+	fmt.Println()
 }

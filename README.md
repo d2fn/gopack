@@ -1,5 +1,7 @@
 # gopack
 
+![](https://travis-ci.org/d2fn/gopack.png)
+
 The [natural logarithm](https://en.wikipedia.org/wiki/Natural_logarithm) to Go's [e](http://en.wikipedia.org/wiki/E_%28mathematical_constant%29). Simple package management for Go a la [rebar](https://github.com/basho/rebar).
 
 A configuration file named `gopack.config` tells gopack about your dependencies and which version should be included. You can point to a tag, a branch, or, if you are being naughty, master. The programming community would thank you not to carry out such a travesty as it leaves your code open to breaking changes. Much better to point at _immutable_ code.
