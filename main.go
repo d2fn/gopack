@@ -102,7 +102,11 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 	dependencies.VisitDeps(
 		func(dep *Dep) {
 			fmtcolor(Gray, "updating %s\n", dep.Import)
-			dep.goGetUpdate()
+			err := dep.goGetUpdate()
+			if err != nil {
+				fail(err)
+			}
+
 			if dep.CheckoutType() != "" {
 				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
 				dep.switchToBranchOrTag()
