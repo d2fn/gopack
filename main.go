@@ -37,14 +37,10 @@ func main() {
 	// localize GOPATH
 	setupEnv()
 
-	deps := loadDependencies(".")
+  deps := loadDependencies(".")
 
-	if os.Args[1] == "stats" {
-		p.PrintSummary()
-	} else {
-		// run the specified command
-		runCommand()
-	}
+	// run the specified command
+	runCommand(deps)
 }
 
 func loadDependencies(root string) *Dependencies {
@@ -59,25 +55,25 @@ func loadDependencies(root string) *Dependencies {
 		loadTransitiveDependencies(dependencies)
 	}
 
-	return dependencies
+  return dependencies
 }
 
 func loadConfiguration(dir string) *Dependencies {
-	importGraph := NewGraph()
+  importGraph := NewGraph()
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 	return LoadDependencyModel(config.DepsTree, importGraph)
 }
 
 func runCommand(deps *Dependencies) {
-	first := os.Args[1]
+  first := os.Args[1]
 	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
 	} else if first == "--dependency-tree" {
-		fmt.Printf("showing dependency tree info\n")
-		deps.PrintDependencyTree()
-		os.Exit(0)
-	}
+    fmt.Printf("showing dependency tree info\n")
+    deps.PrintDependencyTree()
+    os.Exit(0)
+  }
 
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
