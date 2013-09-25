@@ -3,5 +3,8 @@ go:
   - 1.1
   - tip
 
-install: true
+install:
+  - go get github.com/pelletier/go-toml
+  - go build
+  - mv gopack gp
 script: ./gp test
