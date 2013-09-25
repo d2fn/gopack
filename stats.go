@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 )
 
 type ProjectStats struct {
@@ -20,6 +21,43 @@ type ImportStats struct {
 	Path               string
 	Remote             bool
 	ReferencePositions []token.Position
+}
+
+type SummaryItem struct {
+	Origin int
+	Sum    int
+	Path   string
+}
+
+func (i SummaryItem) Legend() string {
+	var origin string
+
+	switch i.Origin {
+	case 1:
+		origin = "R"
+	case 0:
+		origin = "L"
+	case -1:
+		origin = "S"
+	}
+
+	return fmt.Sprintf("%s\t%s\t%d", origin, i.Path, i.Sum)
+}
+
+type Summary struct {
+	Items []SummaryItem
+}
+
+func (s *Summary) Append(i SummaryItem)  { s.Items = append(s.Items, i) }
+func (s *Summary) Get(i int) SummaryItem { return s.Items[i] }
+
+func (s *Summary) Len() int      { return len(s.Items) }
+func (s *Summary) Swap(i, j int) { s.Items[i], s.Items[j] = s.Items[j], s.Items[i] }
+func (s *Summary) Less(i, j int) bool {
+	i1 := s.Items[i]
+	i2 := s.Items[j]
+
+	return i1.Origin > i2.Origin || (i1.Origin == i2.Origin && i1.Sum > i2.Sum)
 }
 
 func NewProjectStats() *ProjectStats {
@@ -92,20 +130,35 @@ func (ps *ProjectStats) IsImportUsed(importPath string) bool {
 	return used
 }
 
-func (ps *ProjectStats) Summary() string {
-	lines := []string{}
-	for k, v := range ps.ImportStatsByPath {
-		if v.Remote {
-			lines = append(lines, fmt.Sprintf("[R] %s:%d", k, len(v.ReferencePositions)))
-		} else if strings.HasPrefix(k, ".") {
-			lines = append(lines, fmt.Sprintf("[L] %s:%d", k, len(v.ReferencePositions)))
-		} else {
-			lines = append(lines, fmt.Sprintf("[S] %s:%d", k, len(v.ReferencePositions)))
-		}
-	}
-	sort.Strings(lines)
+func (ps *ProjectStats) PrintSummary() {
+	writer := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
+	summary := ps.GetSummary()
 
-	return fmt.Sprintf("Import stats summary:\n\n* %s\n\n%s", strings.Join(lines, "\n* "), "[L] Local, [R] Remote, [S] Stdlib")
+	fmt.Fprintln(writer, "Import stats summary:\n")
+	for _, item := range summary.Items {
+		fmt.Fprintln(writer, item.Legend())
+	}
+	fmt.Fprintln(writer, "\nR Remote, L Local, S Stdlib")
+	writer.Flush()
+}
+
+func (ps *ProjectStats) GetSummary() *Summary {
+	summary := &Summary{Items: []SummaryItem{}}
+
+	for k, v := range ps.ImportStatsByPath {
+		item := SummaryItem{Path: k, Sum: len(v.ReferencePositions)}
+		if v.Remote {
+			item.Origin = 1
+		} else if strings.HasPrefix(k, ".") {
+			item.Origin = 0
+		} else {
+			item.Origin = -1
+		}
+		summary.Append(item)
+	}
+	sort.Sort(summary)
+
+	return summary
 }
 
 func NewImportStats(importPath string, pos token.Position) *ImportStats {

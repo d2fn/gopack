@@ -52,7 +52,7 @@ func loadDependencies(root string) {
 	}
 
 	if os.Args[1] == "stats" {
-		fmt.Println(p.Summary())
+		p.PrintSummary()
 	} else {
 		// run the specified command
 		runCommand()

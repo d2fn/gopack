@@ -160,7 +160,7 @@ import "fmt"
 	}
 }
 
-func TestStatsSummary(t *testing.T) {
+func TestGetStatsSummary(t *testing.T) {
 	setupTestPwd()
 
 	createSourceFixture(pwd, "foo.go", `package main
@@ -170,6 +170,7 @@ import "github.com/pelletier/go-toml"
 	createSourceFixture(pwd, "bar.go", `package main
 import "fmt"
 import "./foo"
+import "github.com/pelletier/go-foo"
 import "github.com/pelletier/go-toml"
 `)
 
@@ -178,16 +179,21 @@ import "github.com/pelletier/go-toml"
 		t.Fatal(err)
 	}
 
-	expected := `Import stats summary:
+	s := stats.GetSummary()
 
-* [L] ./foo:1
-* [R] github.com/pelletier/go-toml:2
-* [S] fmt:1
+	checkSumaryItem(t, s.Get(0), "github.com/pelletier/go-toml", "R	github.com/pelletier/go-toml	2")
+	checkSumaryItem(t, s.Get(1), "github.com/pelletier/go-foo", "R	github.com/pelletier/go-foo	1")
+	checkSumaryItem(t, s.Get(2), "./foo", "L	./foo	1")
+	checkSumaryItem(t, s.Get(3), "fmt", "S	fmt	1")
+}
 
-[L] Local, [R] Remote, [S] Stdlib`
+func checkSumaryItem(t *testing.T, item SummaryItem, path, legend string) {
+	if item.Path != path {
+		t.Errorf("Expected item to be %s\n", path)
+	}
 
-	summary := stats.Summary()
-	if summary != expected {
-		t.Errorf("Expected summary to be \n%s \nbut it was \n%s", expected, summary)
+	actual := item.Legend()
+	if actual != legend {
+		t.Errorf("Expected legend to be %s, but was %s\n", legend, actual)
 	}
 }
