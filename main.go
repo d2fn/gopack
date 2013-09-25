@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	GopackVersion      = "0.20.dev"
 	GopackDir          = ".gopack"
 	GopackChecksum     = ".gopack/checksum"
 	GopackTestProjects = ".gopack/test-projects"
@@ -34,7 +35,15 @@ func main() {
 
 	// localize GOPATH
 	setupEnv()
-	loadDependencies(".")
+
+	stats, deps := loadDependencies(".")
+
+	if os.Args[1] == "stats" {
+		stats.PrintSummary()
+	} else {
+		// run the specified command
+		runCommand(deps)
+	}
 }
 
 func announceGopack() {
@@ -42,24 +51,25 @@ func announceGopack() {
 	fmt.Println()
 }
 
-func loadDependencies(root string) {
+func loadDependencies(root string) (*ProjectStats, *Dependencies) {
 	p, err := AnalyzeSourceTree(root)
 	if err != nil {
 		fail(err)
 	}
 
-	config, dependencies := loadConfiguration(root, NewGraph())
+	config, dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
 		config.WriteChecksum()
 	}
-	// run the specified command
-	runCommand()
+
+	return p, dependencies
 }
 
-func loadConfiguration(dir string, importGraph *Graph) (*Config, *Dependencies) {
+func loadConfiguration(dir string) (*Config, *Dependencies) {
+	importGraph := NewGraph()
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 
@@ -72,7 +82,16 @@ func loadConfiguration(dir string, importGraph *Graph) (*Config, *Dependencies) 
 	return config, dependencies
 }
 
-func runCommand() {
+func runCommand(deps *Dependencies) {
+	first := os.Args[1]
+	if first == "version" {
+		fmt.Printf("gopack version %s\n", GopackVersion)
+	} else if first == "--dependency-tree" {
+		fmt.Printf("showing dependency tree info\n")
+		deps.PrintDependencyTree()
+		os.Exit(0)
+	}
+
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
