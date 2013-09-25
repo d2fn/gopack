@@ -51,7 +51,7 @@ func TestInitRepoWithoutRepo(t *testing.T) {
 	config := NewConfig(pwd)
 	config.InitRepo(graph)
 
-  src := path.Join(pwd, VendorDir, "src")
+	src := path.Join(pwd, VendorDir, "src")
 	_, err := os.Stat(src)
 
 	if !os.IsNotExist(err) {
@@ -81,5 +81,3 @@ func TestInitRepo(t *testing.T) {
 		t.Errorf("Expected repository %s to be in the dependencies graph\n", config.Repository)
 	}
 }
-
-

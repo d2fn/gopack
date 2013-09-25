@@ -40,6 +40,10 @@ func NewDependency(repo string) *Dep {
 }
 
 func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
+	if depsTree == nil {
+		return nil
+	}
+
 	deps := new(Dependencies)
 
 	deps.Imports = make([]string, len(depsTree.Keys()))
@@ -94,6 +98,23 @@ func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
 
 func (d *Dependencies) String() string {
 	return fmt.Sprintf("imports = %s, keys = %s", d.Imports, d.Keys)
+}
+
+func (d *Dependencies) PrintDependencyTree() {
+	d.ImportGraph.PreOrderVisit(
+		func(n *Node, depth int) {
+			indent := strings.Repeat(" ", depth*2)
+			dep := n.Dependency
+			bullet := "+-"
+			if n.Leaf {
+				bullet = "-"
+			}
+			if dep == nil {
+				fmt.Printf("%s%s %s\n", indent, bullet, n.Key)
+			} else {
+				fmt.Printf("%s%s %s @ %s\n", indent, bullet, dep.Import, dep.CheckoutSpec)
+			}
+		})
 }
 
 func (d *Dep) String() string {
@@ -196,7 +217,6 @@ func (d *Dep) goGetUpdate() error {
 func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
 	configPath := path.Join(d.Src(), "gopack.config")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmtcolor(Gray, "gopack.config missing for %s\n", d.Import)
 		return nil
 	}
 	config := NewConfig(d.Src())

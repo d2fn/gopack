@@ -36,20 +36,8 @@ func main() {
 	fmt.Println()
 	// localize GOPATH
 	setupEnv()
-	loadDependencies(".")
-}
 
-func loadDependencies(root string) {
-	p, err := AnalyzeSourceTree(root)
-	if err != nil {
-		fail(err)
-	}
-	dependencies := loadConfiguration(root, NewGraph())
-	if dependencies != nil {
-		failWith(dependencies.Validate(p))
-		// prepare dependencies
-		loadTransitiveDependencies(dependencies)
-	}
+	deps := loadDependencies(".")
 
 	if os.Args[1] == "stats" {
 		p.PrintSummary()
@@ -59,21 +47,36 @@ func loadDependencies(root string) {
 	}
 }
 
-func loadConfiguration(dir string, importGraph *Graph) *Dependencies {
-	config := NewConfig(dir)
-	config.InitRepo(importGraph)
-
-	var dependencies *Dependencies
-	if config.DepsTree != nil {
-		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
+func loadDependencies(root string) *Dependencies {
+	p, err := AnalyzeSourceTree(root)
+	if err != nil {
+		fail(err)
+	}
+	dependencies := loadConfiguration(root)
+	if dependencies != nil {
+		failWith(dependencies.Validate(p))
+		// prepare dependencies
+		loadTransitiveDependencies(dependencies)
 	}
 
 	return dependencies
 }
 
-func runCommand() {
-	if os.Args[1] == "version" {
+func loadConfiguration(dir string) *Dependencies {
+	importGraph := NewGraph()
+	config := NewConfig(dir)
+	config.InitRepo(importGraph)
+	return LoadDependencyModel(config.DepsTree, importGraph)
+}
+
+func runCommand(deps *Dependencies) {
+	first := os.Args[1]
+	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
+	} else if first == "--dependency-tree" {
+		fmt.Printf("showing dependency tree info\n")
+		deps.PrintDependencyTree()
+		os.Exit(0)
 	}
 
 	cmd := exec.Command("go", os.Args[1:]...)
