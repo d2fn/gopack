@@ -40,9 +40,9 @@ func NewDependency(repo string) *Dep {
 }
 
 func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
-  if depsTree == nil {
-    return nil
-  }
+	if depsTree == nil {
+		return nil
+	}
 
 	deps := new(Dependencies)
 
@@ -101,20 +101,20 @@ func (d *Dependencies) String() string {
 }
 
 func (d *Dependencies) PrintDependencyTree() {
-  d.ImportGraph.PreOrderVisit(
-    func (n *Node, depth int) {
-      indent := strings.Repeat(" ", depth*2)
-      dep := n.Dependency
-      bullet := "+-"
-      if n.Leaf {
-        bullet = "-"
-      }
-      if dep == nil {
-        fmt.Printf("%s%s %s\n", indent, bullet, n.Key)
-      } else {
-        fmt.Printf("%s%s %s @ %s\n", indent, bullet, dep.Import, dep.CheckoutSpec)
-      }
-    })
+	d.ImportGraph.PreOrderVisit(
+		func(n *Node, depth int) {
+			indent := strings.Repeat(" ", depth*2)
+			dep := n.Dependency
+			bullet := "+-"
+			if n.Leaf {
+				bullet = "-"
+			}
+			if dep == nil {
+				fmt.Printf("%s%s %s\n", indent, bullet, n.Key)
+			} else {
+				fmt.Printf("%s%s %s @ %s\n", indent, bullet, dep.Import, dep.CheckoutSpec)
+			}
+		})
 }
 
 func (d *Dep) String() string {

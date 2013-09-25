@@ -62,17 +62,16 @@ func deepInsert(nodes map[string]*Node, keys []string, dependency *Dep) *Node {
 }
 
 func (graph *Graph) PreOrderVisit(fn func(n *Node, depth int)) {
-  for _, node := range graph.Nodes {
-    node.PreOrderVisit(fn, 0)
-  }
+	for _, node := range graph.Nodes {
+		node.PreOrderVisit(fn, 0)
+	}
 }
 
 func (parent *Node) PreOrderVisit(fn func(n *Node, depth int), depth int) {
-  for _, node := range parent.Nodes {
-    fn(node, depth)
-    if !node.Leaf {
-      node.PreOrderVisit(fn, depth+1)
-    }
-  }
+	for _, node := range parent.Nodes {
+		fn(node, depth)
+		if !node.Leaf {
+			node.PreOrderVisit(fn, depth+1)
+		}
+	}
 }
-
