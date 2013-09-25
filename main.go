@@ -37,17 +37,25 @@ func main() {
 	// localize GOPATH
 	setupEnv()
 
-  deps := loadDependencies(".")
-
-	// run the specified command
-	runCommand(deps)
-}
-
-func loadDependencies(root string) *Dependencies {
-	p, err := AnalyzeSourceTree(root)
+	p, err := AnalyzeSourceTree(".")
 	if err != nil {
 		fail(err)
 	}
+
+  deps := loadDependencies(".", p)
+
+  first := os.Args[1]
+  if first == "dependencytree" {
+    deps.PrintDependencyTree()
+  } else if first == "stats" {
+    p.PrintSummary()
+  } else {
+    // run the specified command
+    runCommand(deps)
+  }
+}
+
+func loadDependencies(root string, p *ProjectStats) *Dependencies {
 	dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
@@ -71,7 +79,6 @@ func runCommand(deps *Dependencies) {
 		fmt.Printf("gopack version %s\n", GopackVersion)
 	} else if first == "--dependency-tree" {
     fmt.Printf("showing dependency tree info\n")
-    deps.PrintDependencyTree()
     os.Exit(0)
   }
 
