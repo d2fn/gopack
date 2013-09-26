@@ -66,8 +66,8 @@ gp run *.go
 
 Gopack includes a few tools to help you track your project dependencies.
 
-1. `./gp show-dependencies` will show you the complete list of external dependencies in your project.
-2. `./gp stats` will show you statistics about dependency imports.
+1. `./gp show-dependencies` shows the complete list of external dependencies in your project.
+2. `./gp stats` shows statistics about dependency imports.
 
 # License
 
