@@ -51,11 +51,10 @@ First checkout and build from source
 ```
 git clone git@github.com:d2fn/gopack.git
 cd gopack
-go get github.com/pelletier/go-toml
-go build
+go get github.com/pelletier/go-toml && go build -o gp
 ```
 
-Then copy the ```gopack``` binary to your project directory and invoke just as you would ```go```. Make sure the current directory is on your path or place the ```gp``` binary elsewhere on your path.
+Then copy the ```gp``` binary to your project directory and invoke just as you would ```go```. Make sure the current directory is on your path or place the ```gp``` binary elsewhere on your path.
 ```
 cp gopack ~/projects/mygoproject/gp
 cd ~/projects/myproject
