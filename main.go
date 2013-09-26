@@ -42,17 +42,16 @@ func main() {
 		fail(err)
 	}
 
-  deps := loadDependencies(".", p)
+	deps := loadDependencies(".", p)
 
-  first := os.Args[1]
-  if first == "dependencytree" {
-    deps.PrintDependencyTree()
-  } else if first == "stats" {
-    p.PrintSummary()
-  } else {
-    // run the specified command
-    runCommand(deps)
-  }
+	switch os.Args[1] {
+	case "show-dependencies":
+		deps.PrintDependencyTree()
+	case "stats":
+		p.PrintSummary()
+	default:
+		runCommand()
+	}
 }
 
 func loadDependencies(root string, p *ProjectStats) *Dependencies {
@@ -63,24 +62,20 @@ func loadDependencies(root string, p *ProjectStats) *Dependencies {
 		loadTransitiveDependencies(dependencies)
 	}
 
-  return dependencies
+	return dependencies
 }
 
 func loadConfiguration(dir string) *Dependencies {
-  importGraph := NewGraph()
+	importGraph := NewGraph()
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 	return LoadDependencyModel(config.DepsTree, importGraph)
 }
 
-func runCommand(deps *Dependencies) {
-  first := os.Args[1]
-	if first == "version" {
+func runCommand() {
+	if os.Args[1] == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
-	} else if first == "--dependency-tree" {
-    fmt.Printf("showing dependency tree info\n")
-    os.Exit(0)
-  }
+	}
 
 	cmd := exec.Command("go", os.Args[1:]...)
 	cmd.Stdout = os.Stdout

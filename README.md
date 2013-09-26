@@ -62,6 +62,13 @@ cd ~/projects/myproject
 gp run *.go
 ```
 
+# Gopack commands
+
+Gopack includes a few tools to help you track your project dependencies.
+
+1. `./gp show-dependencies` will show you the complete list of external dependencies in your project.
+2. `./gp stats` will show you statistics about dependency imports.
+
 # License
 
 Copyright (c) 2013 Dietrich Featherston
