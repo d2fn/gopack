@@ -45,7 +45,7 @@ func main() {
 	deps := loadDependencies(".", p)
 
 	switch os.Args[1] {
-	case "show-dependencies":
+	case "list":
 		deps.PrintDependencyTree()
 	case "stats":
 		p.PrintSummary()
