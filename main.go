@@ -10,6 +10,7 @@ import (
 const (
 	GopackVersion      = "0.20.dev"
 	GopackDir          = ".gopack"
+	GopackChecksum     = ".gopack/checksum"
 	GopackTestProjects = ".gopack/test-projects"
 	VendorDir          = ".gopack/vendor"
 )
@@ -32,8 +33,6 @@ func main() {
 		showColors = false
 	}
 
-	fmtcolor(104, "/// g o p a c k ///")
-	fmt.Println()
 	// localize GOPATH
 	setupEnv()
 
@@ -44,37 +43,50 @@ func main() {
 
 	deps := loadDependencies(".", p)
 
-	switch os.Args[1] {
-	case "list":
+	first := os.Args[1]
+	if first == "dependencytree" {
 		deps.PrintDependencyTree()
-	case "stats":
+	} else if first == "stats" {
 		p.PrintSummary()
-	default:
-		runCommand()
+	} else {
+		// run the specified command
+		runCommand(deps)
 	}
 }
 
 func loadDependencies(root string, p *ProjectStats) *Dependencies {
-	dependencies := loadConfiguration(root)
+	config, dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
+		config.WriteChecksum()
 	}
 
 	return dependencies
 }
 
-func loadConfiguration(dir string) *Dependencies {
+func loadConfiguration(dir string) (*Config, *Dependencies) {
 	importGraph := NewGraph()
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
-	return LoadDependencyModel(config.DepsTree, importGraph)
+
+	var dependencies *Dependencies
+	if config.FetchDependencies() {
+		announceGopack()
+		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
+	}
+
+	return config, dependencies
 }
 
-func runCommand() {
-	if os.Args[1] == "version" {
+func runCommand(deps *Dependencies) {
+	first := os.Args[1]
+	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
+	} else if first == "--dependency-tree" {
+		fmt.Printf("showing dependency tree info\n")
+		os.Exit(0)
 	}
 
 	cmd := exec.Command("go", os.Args[1:]...)
@@ -90,7 +102,11 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 	dependencies.VisitDeps(
 		func(dep *Dep) {
 			fmtcolor(Gray, "updating %s\n", dep.Import)
-			dep.goGetUpdate()
+			err := dep.goGetUpdate()
+			if err != nil {
+				fail(err)
+			}
+
 			if dep.CheckoutType() != "" {
 				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
 				dep.switchToBranchOrTag()
@@ -178,4 +194,9 @@ func failWith(errors []*ProjectError) {
 		fmt.Println()
 		os.Exit(len(errors))
 	}
+}
+
+func announceGopack() {
+	fmtcolor(104, "/// g o p a c k ///")
+	fmt.Println()
 }
