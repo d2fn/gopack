@@ -94,3 +94,36 @@ func (c *Config) checksum() []byte {
 	}
 	return c.Checksum
 }
+
+func (c *Config) LoadDependencyModel(importGraph *Graph) *Dependencies {
+	depsTree := c.DepsTree
+
+	if depsTree == nil {
+		return nil
+	}
+
+	deps := new(Dependencies)
+
+	deps.Imports = make([]string, len(depsTree.Keys()))
+	deps.Keys = make([]string, len(depsTree.Keys()))
+	deps.DepList = make([]*Dep, len(depsTree.Keys()))
+	deps.ImportGraph = importGraph
+
+	for i, k := range depsTree.Keys() {
+		depTree := depsTree.Get(k).(*toml.TomlTree)
+		d := NewDependency(depTree.Get("import").(string))
+
+		d.setCheckout(depTree, "branch", BranchFlag)
+		d.setCheckout(depTree, "commit", CommitFlag)
+		d.setCheckout(depTree, "tag", TagFlag)
+
+		d.CheckValidity()
+
+		deps.Keys[i] = k
+		deps.Imports[i] = d.Import
+		deps.DepList[i] = d
+
+		deps.ImportGraph.Insert(d)
+	}
+	return deps
+}

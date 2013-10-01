@@ -39,37 +39,6 @@ func NewDependency(repo string) *Dep {
 	return &Dep{Import: repo}
 }
 
-func LoadDependencyModel(depsTree *toml.TomlTree, importGraph *Graph) *Dependencies {
-	if depsTree == nil {
-		return nil
-	}
-
-	deps := new(Dependencies)
-
-	deps.Imports = make([]string, len(depsTree.Keys()))
-	deps.Keys = make([]string, len(depsTree.Keys()))
-	deps.DepList = make([]*Dep, len(depsTree.Keys()))
-	deps.ImportGraph = importGraph
-
-	for i, k := range depsTree.Keys() {
-		depTree := depsTree.Get(k).(*toml.TomlTree)
-		d := NewDependency(depTree.Get("import").(string))
-
-		d.setCheckout(depTree, "branch", BranchFlag)
-		d.setCheckout(depTree, "commit", CommitFlag)
-		d.setCheckout(depTree, "tag", TagFlag)
-
-		d.CheckValidity()
-
-		deps.Keys[i] = k
-		deps.Imports[i] = d.Import
-		deps.DepList[i] = d
-
-		deps.ImportGraph.Insert(d)
-	}
-	return deps
-}
-
 func (d *Dependencies) IncludesDependency(importPath string) (*Node, bool) {
 	node := d.ImportGraph.Search(importPath)
 	return node, node != nil
@@ -220,7 +189,7 @@ func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
 		return nil
 	}
 	config := NewConfig(d.Src())
-	return LoadDependencyModel(config.DepsTree, importGraph)
+	return config.LoadDependencyModel(importGraph)
 }
 
 func (d *Dependencies) Validate(p *ProjectStats) []*ProjectError {

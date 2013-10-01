@@ -92,7 +92,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	createFixtureConfig(pwd, fixture)
 
 	config := NewConfig(pwd)
-	dependencies := LoadDependencyModel(config.DepsTree, NewGraph())
+	dependencies := config.LoadDependencyModel(NewGraph())
 	loadTransitiveDependencies(dependencies)
 
 	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")

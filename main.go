@@ -74,7 +74,7 @@ func loadConfiguration(dir string) (*Config, *Dependencies) {
 	var dependencies *Dependencies
 	if config.FetchDependencies() {
 		announceGopack()
-		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
+		dependencies = config.LoadDependencyModel(importGraph)
 	}
 
 	return config, dependencies
