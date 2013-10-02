@@ -88,6 +88,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	fixture := `
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  branch = "master"
 `
 	createFixtureConfig(pwd, fixture)
 

@@ -47,7 +47,7 @@ func (d *Dependencies) IncludesDependency(importPath string) (*Node, bool) {
 }
 
 func (d *Dep) Fetch(all bool) bool {
-	d.fetch = all || d.CheckoutFlag == BranchFlag
+	d.fetch = all || (d.CheckoutFlag != CommitFlag && d.CheckoutFlag != TagFlag)
 	return d.fetch
 }
 

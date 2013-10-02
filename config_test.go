@@ -26,6 +26,7 @@ repo = "github.com/d2fn/gopack"
 
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  branch = "master"
 `)
 
 	if config.Repository == "" {
@@ -41,6 +42,7 @@ func TestInitRepoWithoutRepo(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  branch = "master"
 `)
 
 	graph := NewGraph()
@@ -76,6 +78,7 @@ func TestWriteChecksum(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  branch = "master"
 `)
 
 	config.WriteChecksum()
@@ -91,6 +94,7 @@ func TestFetchDependenciesWithoutChecksum(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  branch = "master"
 `)
 
 	if config.LoadDependencyModel(NewGraph()) == nil {
@@ -142,11 +146,52 @@ func TestFetchDependenciesWithChanges(t *testing.T) {
   commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
 [deps.foo]
   import = "github.com/calavera/foo"
+  branch = "master"
 `
 	createFixtureConfig(pwd, fixture)
 
 	deps := config.LoadDependencyModel(NewGraph())
 	if len(deps.DepList) != 1 {
 		t.Errorf("Expected to load only the new dependencies")
+	}
+}
+
+func TestFetchWithMixedSpecs(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+  commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
+[deps.foo]
+  import = "github.com/calavera/foo"
+  branch = "master"
+`)
+	config.WriteChecksum()
+
+	deps := config.LoadDependencyModel(NewGraph())
+	if deps.DepList[0].fetch {
+		t.Errorf("Expected to not fetch the commit dependencies")
+	}
+	if !deps.DepList[1].fetch {
+		t.Errorf("Expected to fetch the branch dependencies")
+	}
+}
+
+func TestFetchWithMixedSpecsIgnoringOrder(t *testing.T) {
+	config := setupTestConfig(`
+[deps.foo]
+  import = "github.com/calavera/foo"
+  branch = "master"
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+  commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
+`)
+	config.WriteChecksum()
+
+	deps := config.LoadDependencyModel(NewGraph())
+	if !deps.DepList[0].fetch {
+		t.Errorf("Expected to not fetch the commit dependencies")
+	}
+	if deps.DepList[1].fetch {
+		t.Errorf("Expected to fetch the branch dependencies")
 	}
 }

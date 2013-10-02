@@ -105,7 +105,8 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
 	deps.ImportGraph = importGraph
 
-	fetchDeps := c.modifiedChecksum()
+	modifiedChecksum := c.modifiedChecksum()
+	fetchDeps := modifiedChecksum
 
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
@@ -116,7 +117,9 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 		d.setCheckout(depTree, "tag", TagFlag)
 
 		d.CheckValidity()
-		fetchDeps = d.Fetch(fetchDeps)
+		if d.Fetch(modifiedChecksum) {
+			fetchDeps = true
+		}
 
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
