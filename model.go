@@ -33,6 +33,8 @@ type Dep struct {
 	CheckoutFlag uint8
 	// the name of the thing to checkout whether it be a commit, branch, or tag
 	CheckoutSpec string
+
+	fetch bool
 }
 
 func NewDependency(repo string) *Dep {
@@ -42,6 +44,11 @@ func NewDependency(repo string) *Dep {
 func (d *Dependencies) IncludesDependency(importPath string) (*Node, bool) {
 	node := d.ImportGraph.Search(importPath)
 	return node, node != nil
+}
+
+func (d *Dep) Fetch(all bool) bool {
+	d.fetch = all || d.CheckoutFlag == BranchFlag
+	return d.fetch
 }
 
 func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
@@ -178,9 +185,12 @@ func cdHome() error {
 }
 
 // update the git repo for this dep
-func (d *Dep) goGetUpdate() error {
-	cmd := exec.Command("go", "get", "-u", d.Import)
-	return cmd.Run()
+func (d *Dep) goGetUpdate() (err error) {
+	if d.fetch {
+		cmd := exec.Command("go", "get", "-u", d.Import)
+		err = cmd.Run()
+	}
+	return
 }
 
 func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {

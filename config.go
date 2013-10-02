@@ -59,10 +59,6 @@ func (c *Config) InitRepo(importGraph *Graph) {
 	}
 }
 
-func (c *Config) FetchDependencies() bool {
-	return c.DepsTree != nil && c.modifiedChecksum()
-}
-
 func (c *Config) modifiedChecksum() bool {
 	dat, err := ioutil.ReadFile(c.checksumPath())
 	return (err != nil && os.IsNotExist(err)) || !bytes.Equal(dat, c.checksum())
@@ -95,19 +91,21 @@ func (c *Config) checksum() []byte {
 	return c.Checksum
 }
 
-func (c *Config) LoadDependencyModel(importGraph *Graph) *Dependencies {
+func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 	depsTree := c.DepsTree
 
 	if depsTree == nil {
-		return nil
+		return
 	}
 
-	deps := new(Dependencies)
+	deps = new(Dependencies)
 
 	deps.Imports = make([]string, len(depsTree.Keys()))
 	deps.Keys = make([]string, len(depsTree.Keys()))
 	deps.DepList = make([]*Dep, len(depsTree.Keys()))
 	deps.ImportGraph = importGraph
+
+	fetchDeps := c.modifiedChecksum()
 
 	for i, k := range depsTree.Keys() {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
@@ -118,6 +116,7 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) *Dependencies {
 		d.setCheckout(depTree, "tag", TagFlag)
 
 		d.CheckValidity()
+		fetchDeps = d.Fetch(fetchDeps)
 
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import
@@ -125,5 +124,10 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) *Dependencies {
 
 		deps.ImportGraph.Insert(d)
 	}
-	return deps
+
+	if fetchDeps == false {
+		deps = nil
+	}
+
+	return
 }

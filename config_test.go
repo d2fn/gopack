@@ -93,8 +93,8 @@ func TestFetchDependenciesWithoutChecksum(t *testing.T) {
   import = "github.com/calavera/testGoPack"
 `)
 
-	if !config.FetchDependencies() {
-		t.Errorf("Expected fetch dependencies to be true when there is no checksum")
+	if config.LoadDependencyModel(NewGraph()) == nil {
+		t.Errorf("Expected to load all the dependencies when there is no checksum")
 	}
 }
 
@@ -102,11 +102,27 @@ func TestFetchDependenciesWithoutChanges(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
 `)
 	config.WriteChecksum()
 
-	if config.FetchDependencies() {
-		t.Errorf("Expected fetch dependencies to be false when the checksum doesn't change")
+	deps := config.LoadDependencyModel(NewGraph())
+	if deps != nil {
+		t.Errorf("Expected to not load any dependency with commit flag")
+	}
+}
+
+func TestFetchDependenciesWithBranch(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+  branch = "master"
+`)
+	config.WriteChecksum()
+
+	deps := config.LoadDependencyModel(NewGraph())
+	if len(deps.DepList) != 1 {
+		t.Errorf("Expected to load any dependency with branch flag")
 	}
 }
 
@@ -114,6 +130,7 @@ func TestFetchDependenciesWithChanges(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
 `)
 
 	config.WriteChecksum()
@@ -122,12 +139,14 @@ func TestFetchDependenciesWithChanges(t *testing.T) {
 	fixture := `
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
+  commit = "182cae2ee3926a960223d8db4998aa9d57c89788"
 [deps.foo]
   import = "github.com/calavera/foo"
 `
 	createFixtureConfig(pwd, fixture)
 
-	if !config.FetchDependencies() {
-		t.Errorf("Expected fetch dependencies to be true when the checksum changes")
+	deps := config.LoadDependencyModel(NewGraph())
+	if len(deps.DepList) != 1 {
+		t.Errorf("Expected to load only the new dependencies")
 	}
 }
