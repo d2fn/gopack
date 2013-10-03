@@ -156,7 +156,7 @@ func TestFetchDependenciesWithChanges(t *testing.T) {
 	}
 }
 
-func TestFetchWithMixedSpecs(t *testing.T) {
+func TestFetchWithCommitSpecs(t *testing.T) {
 	config := setupTestConfig(`
 [deps.testgopack]
   import = "github.com/calavera/testGoPack"
@@ -170,6 +170,26 @@ func TestFetchWithMixedSpecs(t *testing.T) {
 	deps := config.LoadDependencyModel(NewGraph())
 	if deps.DepList[0].fetch {
 		t.Errorf("Expected to not fetch the commit dependencies")
+	}
+	if !deps.DepList[1].fetch {
+		t.Errorf("Expected to fetch the branch dependencies")
+	}
+}
+
+func TestFetchWithTagSpecs(t *testing.T) {
+	config := setupTestConfig(`
+[deps.testgopack]
+  import = "github.com/calavera/testGoPack"
+  tag = "v1.0.0"
+[deps.foo]
+  import = "github.com/calavera/foo"
+  branch = "master"
+`)
+	config.WriteChecksum()
+
+	deps := config.LoadDependencyModel(NewGraph())
+	if deps.DepList[0].fetch {
+		t.Errorf("Expected to not fetch the tag dependencies")
 	}
 	if !deps.DepList[1].fetch {
 		t.Errorf("Expected to fetch the branch dependencies")
