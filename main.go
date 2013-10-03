@@ -57,6 +57,7 @@ func main() {
 func loadDependencies(root string, p *ProjectStats) *Dependencies {
 	config, dependencies := loadConfiguration(root)
 	if dependencies != nil {
+		announceGopack()
 		failWith(dependencies.Validate(p))
 		// prepare dependencies
 		loadTransitiveDependencies(dependencies)
@@ -71,11 +72,7 @@ func loadConfiguration(dir string) (*Config, *Dependencies) {
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 
-	var dependencies *Dependencies
-	if config.FetchDependencies() {
-		announceGopack()
-		dependencies = LoadDependencyModel(config.DepsTree, importGraph)
-	}
+	dependencies := config.LoadDependencyModel(importGraph)
 
 	return config, dependencies
 }
