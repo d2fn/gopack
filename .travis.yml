@@ -5,6 +5,5 @@ go:
 
 install:
   - go get github.com/pelletier/go-toml
-  - go build
-  - mv gopack gp
+  - go build -o gp
 script: ./gp test
