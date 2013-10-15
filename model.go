@@ -187,7 +187,7 @@ func cdHome() error {
 // update the git repo for this dep
 func (d *Dep) goGetUpdate() (err error) {
 	if d.fetch {
-		cmd := exec.Command("go", "get", "-u", d.Import)
+		cmd := exec.Command("go", "get", "-d", "-u", d.Import)
 		err = cmd.Run()
 	}
 	return
