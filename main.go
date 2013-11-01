@@ -43,6 +43,10 @@ func main() {
 
 	deps := loadDependencies(".", p)
 
+  if deps == nil {
+    fail("Error loading dependency info")
+  }
+
 	first := os.Args[1]
 	if first == "dependencytree" {
 		deps.PrintDependencyTree()
@@ -63,7 +67,6 @@ func loadDependencies(root string, p *ProjectStats) *Dependencies {
 		loadTransitiveDependencies(dependencies)
 		config.WriteChecksum()
 	}
-
 	return dependencies
 }
 
@@ -81,8 +84,6 @@ func runCommand(deps *Dependencies) {
 	first := os.Args[1]
 	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
-	} else if first == "--dependency-tree" {
-		fmt.Printf("showing dependency tree info\n")
 		os.Exit(0)
 	}
 

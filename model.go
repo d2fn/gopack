@@ -72,6 +72,24 @@ func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
 	}
 }
 
+func (d *Dependencies) AnyDepsNeedFetching() bool {
+  for _, dep := range d.DepList {
+    if dep.fetch {
+      return true
+    }
+  }
+  return false
+}
+
+func (d *Dependencies) AllDepsNeedFetching() bool {
+	for _, dep := range d.DepList {
+		if !dep.fetch {
+			return false
+		}
+	}
+	return true
+}
+
 func (d *Dependencies) String() string {
 	return fmt.Sprintf("imports = %s, keys = %s", d.Imports, d.Keys)
 }
@@ -79,6 +97,7 @@ func (d *Dependencies) String() string {
 func (d *Dependencies) PrintDependencyTree() {
 	d.ImportGraph.PreOrderVisit(
 		func(n *Node, depth int) {
+			fmt.Printf("depth = %d\n", depth)
 			indent := strings.Repeat(" ", depth*2)
 			dep := n.Dependency
 			bullet := "+-"
