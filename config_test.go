@@ -97,7 +97,7 @@ func TestFetchDependenciesWithoutChecksum(t *testing.T) {
   branch = "master"
 `)
 
-	if config.LoadDependencyModel(NewGraph()) == nil {
+	if !config.LoadDependencyModel(NewGraph()).AllDepsNeedFetching() {
 		t.Errorf("Expected to load all the dependencies when there is no checksum")
 	}
 }
@@ -111,7 +111,7 @@ func TestFetchDependenciesWithoutChanges(t *testing.T) {
 	config.WriteChecksum()
 
 	deps := config.LoadDependencyModel(NewGraph())
-	if deps != nil {
+	if deps.AnyDepsNeedFetching() {
 		t.Errorf("Expected to not load any dependency with commit flag")
 	}
 }
