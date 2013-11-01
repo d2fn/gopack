@@ -21,6 +21,10 @@ _testmain.go
 
 *.exe
 
+.idea/
+*.iml
+*.ipr
+
 # ignore the bin
 gp
 gopack
