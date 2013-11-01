@@ -106,3 +106,31 @@ func TestTransitiveDependencies(t *testing.T) {
 		t.Errorf("Expected dependency github.com/d2fn/gopack to be in vendor %s\n", pwd)
 	}
 }
+
+func TestProvider(t *testing.T) {
+	setupTestPwd()
+	setupEnv()
+
+	fixture := `
+[deps.testpewp]
+  import = "github.com/pewp/libpewp"
+  branch = "master"
+  provider = "git"
+[deps.testnopro]
+  import = "github.com/pewp/libnopro"
+  branch = "master"
+`
+	createFixtureConfig(pwd, fixture)
+	config := NewConfig(pwd)
+	dependencies := config.LoadDependencyModel(NewGraph())
+	if len(dependencies.DepList) > 2 {
+		t.Fatalf("WHOA buddy, shoulda had 2 deps, had %d instead", len(dependencies.DepList))
+	}
+	if dependencies.DepList[0].Provider != "git" {
+		t.Fatalf("Provider should have been git, was %s", dependencies.DepList[0])
+	}
+	if dependencies.DepList[1].Provider != "go" {
+		t.Fatalf("Provider should have been go, was %s", dependencies.DepList[1])
+	}
+
+}

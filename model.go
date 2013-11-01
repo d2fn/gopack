@@ -34,7 +34,11 @@ type Dep struct {
 	// the name of the thing to checkout whether it be a commit, branch, or tag
 	CheckoutSpec string
 
+	// does this dep need to be fetched
 	fetch bool
+
+	// what is the provider for this dep (hg, git, bzr etc)
+	Provider string
 }
 
 func NewDependency(repo string) *Dep {
@@ -56,6 +60,15 @@ func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
 	if s != nil {
 		d.CheckoutSpec = s.(string)
 		d.CheckoutFlag |= flag
+	}
+}
+
+func (d *Dep) setProvider(t *toml.TomlTree) {
+	provider := t.Get("provider")
+	if provider != nil {
+		d.Provider = provider.(string)
+	} else {
+		d.Provider = "go"
 	}
 }
 
@@ -114,7 +127,7 @@ func (d *Dependencies) PrintDependencyTree() {
 
 func (d *Dep) String() string {
 	if d.CheckoutType() != "" {
-		return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+		return fmt.Sprintf("import = %s, %s = %s, provider = %s", d.Import, d.CheckoutType(), d.CheckoutSpec, d.Provider)
 	} else {
 		return fmt.Sprintf("import = %s", d.Import)
 	}
@@ -203,7 +216,7 @@ func cdHome() error {
 	return os.Chdir(pwd)
 }
 
-// update the git repo for this dep
+// update the repo for this dep
 func (d *Dep) goGetUpdate() (err error) {
 	if d.fetch {
 		cmd := exec.Command("go", "get", "-d", "-u", d.Import)

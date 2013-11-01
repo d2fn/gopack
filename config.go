@@ -111,6 +111,8 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := NewDependency(depTree.Get("import").(string))
 
+		d.setProvider(depTree)
+
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
