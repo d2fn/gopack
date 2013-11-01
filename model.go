@@ -5,7 +5,6 @@ import (
 	"github.com/pelletier/go-toml"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 )
@@ -39,6 +38,8 @@ type Dep struct {
 
 	// what is the provider for this dep (hg, git, bzr etc)
 	Provider string
+	// whence the Provider should clone/checkout
+	Source string
 }
 
 func NewDependency(repo string) *Dep {
@@ -72,11 +73,29 @@ func (d *Dep) setProvider(t *toml.TomlTree) {
 	}
 }
 
-func (d *Dep) CheckValidity() {
+func (d *Dep) setSource(t *toml.TomlTree) {
+	source := t.Get("source")
+	if source != nil {
+		d.Source = source.(string)
+	} else {
+		d.Source = ""
+	}
+}
+
+func (d *Dep) Validate() (err error) {
 	f := d.CheckoutFlag
 	if f&(f-1) != 0 {
-		failf("%s - only one of branch/commit/tag may be specified\n", d.Import)
+		err = fmt.Errorf("%s - only one of branch/commit/tag may be specified\n", d.Import)
 	}
+
+	if d.Provider != "go" && d.Source == "" {
+		err = fmt.Errorf("%s - Provider set to an SCM system, but no source set.", d.Import)
+	}
+
+	if d.Provider == "go" && d.Source != "" {
+		err = fmt.Errorf("%s - Source set, but no provider", d.Import)
+	}
+	return err
 }
 
 func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
@@ -173,23 +192,42 @@ func (d *Dep) switchToBranchOrTag() error {
 
 // Tell the scm where the dependency is hosted.
 func (d *Dep) Scm() (Scm, error) {
+	if d.Provider == "git" {
+		return Git{}, nil
+	} else if d.Provider == "hg" {
+		return Hg{}, nil
+	} else if d.Provider == "svn" {
+		return Svn{}, nil
+	}
 	parts := strings.Split(d.Import, "/")
 	initPath := d.Src()
 	scms := map[string]Scm{".git": Git{}, ".hg": Hg{}, ".svn": Svn{}}
-
 	// Traverse the source tree backwards until
 	// it finds the right directory
 	// or it arrives to the base of the import.
+	var scmFound Scm = nil
 	for _, _ = range parts {
 		for key, scm := range scms {
 			if d.scmPath(path.Join(initPath, key)) {
-				return scm, nil
+				scmFound = scm
+				break
 			}
 		}
-
 		initPath = path.Join(initPath, "..")
 	}
 
+	if scmFound != nil {
+		if d.Provider == "go" {
+			return Go{scmFound}, nil
+		} else {
+			return scmFound, nil
+		}
+	} else if d.Provider == "go" {
+		// this is a little janky, but it allows Go.Init() to be called; the next time
+		// .Scm is called, it'll find the appropriate Scm. This means the abstraction
+		// probably needs to be rethought BUT AINT NOBODY GOT TIME FOR THAT
+		return Go{nil}, nil
+	}
 	return nil, fmt.Errorf("unknown scm for %s", d.Import)
 }
 
@@ -216,19 +254,10 @@ func cdHome() error {
 	return os.Chdir(pwd)
 }
 
-// update the repo for this dep
-func (d *Dep) goGetUpdate() (err error) {
-	if d.fetch {
-		cmd := exec.Command("go", "get", "-d", "-u", d.Import)
-		err = cmd.Run()
-	}
-	return
-}
-
-func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
+func (d *Dep) LoadTransitiveDeps(importGraph *Graph) (*Dependencies, error) {
 	configPath := path.Join(d.Src(), "gopack.config")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil
+		return nil, nil
 	}
 	config := NewConfig(d.Src())
 	return config.LoadDependencyModel(importGraph)

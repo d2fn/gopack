@@ -97,7 +97,7 @@ func TestFetchDependenciesWithoutChecksum(t *testing.T) {
   branch = "master"
 `)
 
-	if !config.LoadDependencyModel(NewGraph()).AllDepsNeedFetching() {
+	if cfg, _ := config.LoadDependencyModel(NewGraph()); !cfg.AllDepsNeedFetching() {
 		t.Errorf("Expected to load all the dependencies when there is no checksum")
 	}
 }
@@ -110,7 +110,7 @@ func TestFetchDependenciesWithoutChanges(t *testing.T) {
 `)
 	config.WriteChecksum()
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if deps.AnyDepsNeedFetching() {
 		t.Errorf("Expected to not load any dependency with commit flag")
 	}
@@ -124,7 +124,7 @@ func TestFetchDependenciesWithBranch(t *testing.T) {
 `)
 	config.WriteChecksum()
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if len(deps.DepList) != 1 {
 		t.Errorf("Expected to load any dependency with branch flag")
 	}
@@ -150,7 +150,7 @@ func TestFetchDependenciesWithChanges(t *testing.T) {
 `
 	createFixtureConfig(pwd, fixture)
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if len(deps.DepList) != 1 {
 		t.Errorf("Expected to load only the new dependencies")
 	}
@@ -167,7 +167,7 @@ func TestFetchWithCommitSpecs(t *testing.T) {
 `)
 	config.WriteChecksum()
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if deps.DepList[0].fetch {
 		t.Errorf("Expected to not fetch the commit dependencies")
 	}
@@ -187,7 +187,7 @@ func TestFetchWithTagSpecs(t *testing.T) {
 `)
 	config.WriteChecksum()
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if deps.DepList[0].fetch {
 		t.Errorf("Expected to not fetch the tag dependencies")
 	}
@@ -207,7 +207,7 @@ func TestFetchWithMixedSpecsIgnoringOrder(t *testing.T) {
 `)
 	config.WriteChecksum()
 
-	deps := config.LoadDependencyModel(NewGraph())
+	deps, _ := config.LoadDependencyModel(NewGraph())
 	if !deps.DepList[0].fetch {
 		t.Errorf("Expected to not fetch the commit dependencies")
 	}

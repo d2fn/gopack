@@ -93,7 +93,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	createFixtureConfig(pwd, fixture)
 
 	config := NewConfig(pwd)
-	dependencies := config.LoadDependencyModel(NewGraph())
+	dependencies, _ := config.LoadDependencyModel(NewGraph())
 	loadTransitiveDependencies(dependencies)
 
 	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")
@@ -113,16 +113,17 @@ func TestProvider(t *testing.T) {
 
 	fixture := `
 [deps.testpewp]
-  import = "github.com/pewp/libpewp"
+  import = "github.com/calavera/testGoPack"
   branch = "master"
   provider = "git"
+  source = "git@github.com:calavera/testGoPack"
 [deps.testnopro]
-  import = "github.com/pewp/libnopro"
+import = "github.com/nu7hatch/gouuid"
   branch = "master"
 `
 	createFixtureConfig(pwd, fixture)
 	config := NewConfig(pwd)
-	dependencies := config.LoadDependencyModel(NewGraph())
+	dependencies, _ := config.LoadDependencyModel(NewGraph())
 	if len(dependencies.DepList) > 2 {
 		t.Fatalf("WHOA buddy, shoulda had 2 deps, had %d instead", len(dependencies.DepList))
 	}
@@ -133,4 +134,35 @@ func TestProvider(t *testing.T) {
 		t.Fatalf("Provider should have been go, was %s", dependencies.DepList[1])
 	}
 
+	loadTransitiveDependencies(dependencies)
+	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")
+	if _, err := os.Stat(dep); os.IsNotExist(err) {
+		t.Errorf("Expected dependency github.com/calavera/testGoPack to be in vendor %s\n", pwd)
+	}
+
+}
+
+func TestProviderAndSourceRequired(t *testing.T) {
+	setupTestPwd()
+	setupEnv()
+
+	fixtures := []string{`
+[deps.testpewp]
+  import = "github.com/pewp/libnosource"
+  branch = "master"
+  provider = "git"`,
+		`[deps.testnopro]
+  import = "github.com/pewp/libnopro"
+  branch = "master"
+  source = "git@github.com:pewp/libpewp.git"
+`}
+
+	for _, fixture := range fixtures {
+		createFixtureConfig(pwd, fixture)
+		config := NewConfig(pwd)
+		dependencies, err := config.LoadDependencyModel(NewGraph())
+		if err == nil {
+			t.Fatalf("Supposed to have failed due to lacking Source or Provider - %s", dependencies.DepList[0])
+		}
+	}
 }

@@ -91,7 +91,7 @@ func (c *Config) checksum() []byte {
 	return c.Checksum
 }
 
-func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
+func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies, err error) {
 	depsTree := c.DepsTree
 
 	if depsTree == nil {
@@ -112,12 +112,16 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 		d := NewDependency(depTree.Get("import").(string))
 
 		d.setProvider(depTree)
+		d.setSource(depTree)
 
 		d.setCheckout(depTree, "branch", BranchFlag)
 		d.setCheckout(depTree, "commit", CommitFlag)
 		d.setCheckout(depTree, "tag", TagFlag)
 
-		d.CheckValidity()
+		if err := d.Validate(); err != nil {
+			return nil, err
+		}
+
 		d.fetch = modifiedChecksum || d.CheckoutFlag == BranchFlag
 
 		deps.Keys[i] = k
@@ -127,5 +131,5 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies) {
 		deps.ImportGraph.Insert(d)
 	}
 
-	return
+	return deps, nil
 }
