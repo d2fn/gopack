@@ -128,3 +128,17 @@ func TestSearchWorksWithExtendedNames(t *testing.T) {
 		t.Error("Expected search to succeed importing extended repos")
 	}
 }
+
+func TestInsertingLeafs(t *testing.T) {
+	graph := NewGraph()
+	dep := &Dep{Import: "github.com/d2fn/gopack"}
+	graph.Insert(dep)
+
+	if graph.Leafs.Len() == 0 {
+		t.Fatal("Expected to have one leaf")
+	}
+
+	if graph.Leafs.Front().Value != "github.com/d2fn/gopack" {
+		t.Fatal("Expected to have github.com/d2fn/gopack in the list of leafs")
+	}
+}

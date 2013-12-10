@@ -41,24 +41,25 @@ func main() {
 		fail(err)
 	}
 
-	deps := loadDependencies(".", p)
+	config, deps := loadDependencies(".", p)
 
-  if deps == nil {
-    fail("Error loading dependency info")
-  }
+	if deps == nil {
+		fail("Error loading dependency info")
+	}
 
-	first := os.Args[1]
-	if first == "dependencytree" {
+	switch os.Args[1] {
+	case "dependencytree":
 		deps.PrintDependencyTree()
-	} else if first == "stats" {
+	case "stats":
 		p.PrintSummary()
-	} else {
-		// run the specified command
-		runCommand(deps)
+	case "installdeps":
+		deps.Install(config.Repository)
+	default:
+		runCommand()
 	}
 }
 
-func loadDependencies(root string, p *ProjectStats) *Dependencies {
+func loadDependencies(root string, p *ProjectStats) (*Config, *Dependencies) {
 	config, dependencies := loadConfiguration(root)
 	if dependencies != nil {
 		announceGopack()
@@ -67,7 +68,7 @@ func loadDependencies(root string, p *ProjectStats) *Dependencies {
 		loadTransitiveDependencies(dependencies)
 		config.WriteChecksum()
 	}
-	return dependencies
+	return config, dependencies
 }
 
 func loadConfiguration(dir string) (*Config, *Dependencies) {
@@ -80,14 +81,18 @@ func loadConfiguration(dir string) (*Config, *Dependencies) {
 	return config, dependencies
 }
 
-func runCommand(deps *Dependencies) {
+func runCommand() {
 	first := os.Args[1]
 	if first == "version" {
 		fmt.Printf("gopack version %s\n", GopackVersion)
 		os.Exit(0)
 	}
 
-	cmd := exec.Command("go", os.Args[1:]...)
+	run(os.Args[1:]...)
+}
+
+func run(args ...string) {
+	cmd := exec.Command("go", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

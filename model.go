@@ -73,12 +73,12 @@ func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
 }
 
 func (d *Dependencies) AnyDepsNeedFetching() bool {
-  for _, dep := range d.DepList {
-    if dep.fetch {
-      return true
-    }
-  }
-  return false
+	for _, dep := range d.DepList {
+		if dep.fetch {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Dependencies) AllDepsNeedFetching() bool {
@@ -110,6 +110,33 @@ func (d *Dependencies) PrintDependencyTree() {
 				fmt.Printf("%s%s %s @ %s\n", indent, bullet, dep.Import, dep.CheckoutSpec)
 			}
 		})
+}
+
+func (d *Dependencies) Install(repo string) {
+	installList := d.InstallList(repo)
+
+	if len(installList) > 0 {
+		run(installList...)
+	}
+}
+
+func (d *Dependencies) InstallList(repo string) []string {
+	l := d.ImportGraph.Leafs
+
+	length := l.Len()
+	if e := l.Front(); e.Value.(string) == repo {
+		l.Remove(e)
+		length = length - 1
+	}
+
+	leafs := make([]string, length)
+	leafs[0] = "install"
+
+	for e := l.Front(); e != nil; e = e.Next() {
+		leafs = append(leafs, e.Value.(string))
+	}
+
+	return leafs
 }
 
 func (d *Dep) String() string {
