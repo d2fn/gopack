@@ -113,30 +113,15 @@ func (d *Dependencies) PrintDependencyTree() {
 }
 
 func (d *Dependencies) Install(repo string) {
-	installList := d.InstallList(repo)
+	var importName string
 
-	if len(installList) > 0 {
-		run(installList...)
+	for e := d.ImportGraph.Leafs.Front(); e != nil; e = e.Next() {
+		importName = e.Value.(string)
+
+		if importName != repo {
+			run("install", importName)
+		}
 	}
-}
-
-func (d *Dependencies) InstallList(repo string) []string {
-	l := d.ImportGraph.Leafs
-
-	length := l.Len()
-	if e := l.Front(); e.Value.(string) == repo {
-		l.Remove(e)
-		length = length - 1
-	}
-
-	leafs := make([]string, length)
-	leafs[0] = "install"
-
-	for e := l.Front(); e != nil; e = e.Next() {
-		leafs = append(leafs, e.Value.(string))
-	}
-
-	return leafs
 }
 
 func (d *Dep) String() string {
