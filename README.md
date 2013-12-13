@@ -45,7 +45,7 @@ etc…
 
 The ```gp``` command will make sure your dependencies are downloaded, their respective git repos are pointed at the appropriate tag or branch, and your code is compiled against the desired library versions. Project dependencies are stored locally in the ```vendor``` directory.
 
-# Installation
+## Installation
 
 First checkout and build from source
 ```
@@ -61,7 +61,22 @@ cd ~/projects/myproject
 gp run *.go
 ```
 
-# Gopack commands
+## Sources and Providers
+
+Gopach uses `goget` to download packages by default, but when you need more control over downloads you can be more specific about the source and the type of provider.
+
+For example, if you want to download the source using git via ssh, you can provide the ssh url and specify `git` as a provider:
+
+```toml
+[deps.mux]
+import = "github.com/gorilla/mux"
+source = "git@github.com:gorilla/mux.git"
+provider = "git"
+```
+
+You can do the same with Mercurial, `hg`, and Subversion, `svn`.
+
+## Gopack commands
 
 Gopack includes a few tools to help you track your project dependencies.
 
@@ -69,7 +84,7 @@ Gopack includes a few tools to help you track your project dependencies.
 2. `./gp stats` shows statistics about dependency imports.
 3. `./gp installdeps` installs the project dependencies using `go install ...`.
 
-# License
+## License
 
 Copyright (c) 2013 Dietrich Featherston
 
