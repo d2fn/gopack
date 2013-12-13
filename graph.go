@@ -1,11 +1,13 @@
 package main
 
 import (
+	"container/list"
 	"strings"
 )
 
 type Graph struct {
 	Nodes map[string]*Node
+	Leafs *list.List
 }
 
 type Node struct {
@@ -16,12 +18,14 @@ type Node struct {
 }
 
 func NewGraph() *Graph {
-	return &Graph{Nodes: make(map[string]*Node)}
+	return &Graph{
+		Nodes: make(map[string]*Node),
+		Leafs: list.New()}
 }
 
 func (graph *Graph) Insert(dependency *Dep) {
 	keys := strings.Split(dependency.Import, "/")
-	graph.Nodes[keys[0]] = deepInsert(graph.Nodes, keys, dependency)
+	graph.Nodes[keys[0]] = graph.deepInsert(graph.Nodes, keys, dependency)
 }
 
 func (graph *Graph) Search(importPath string) *Node {
@@ -44,7 +48,7 @@ func (graph *Graph) Search(importPath string) *Node {
 	return nil
 }
 
-func deepInsert(nodes map[string]*Node, keys []string, dependency *Dep) *Node {
+func (graph *Graph) deepInsert(nodes map[string]*Node, keys []string, dependency *Dep) *Node {
 	node, found := nodes[keys[0]]
 	if found == false {
 		node = &Node{Key: keys[0], Nodes: make(map[string]*Node)}
@@ -54,8 +58,10 @@ func deepInsert(nodes map[string]*Node, keys []string, dependency *Dep) *Node {
 	if len(newKeys) == 0 {
 		node.Dependency = dependency
 		node.Leaf = true
+
+		graph.Leafs.PushBack(node.Dependency.Import)
 	} else {
-		node.Nodes[newKeys[0]] = deepInsert(node.Nodes, newKeys, dependency)
+		node.Nodes[newKeys[0]] = graph.deepInsert(node.Nodes, newKeys, dependency)
 	}
 
 	return node
