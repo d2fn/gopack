@@ -63,7 +63,7 @@ gp run *.go
 
 ## Sources and Providers
 
-Gopach uses `goget` to download packages by default, but when you need more control over downloads you can be more specific about the source and the type of provider.
+Gopack uses `goget` to download packages by default, but when you need more control over downloads you can be more specific about the source and the type of provider.
 
 For example, if you want to download the source using git via ssh, you can provide the ssh url and specify `git` as a provider:
 
