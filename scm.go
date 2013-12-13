@@ -9,6 +9,15 @@ import (
 	"path"
 )
 
+const (
+	GitTag    = "git"
+	HgTag     = "hg"
+	SvnTag    = "svn"
+	HiddenGit = ".git"
+	HiddenHg  = ".hg"
+	HiddenSvn = ".svn"
+)
+
 type Scm interface {
 	Init(d *Dep) error
 	Checkout(d *Dep) error
@@ -32,7 +41,7 @@ func downloadDependency(d *Dep, depPath, scmType string, scm Scm) (err error) {
 	} else if err != nil {
 		err = fmt.Errorf("Error while examining dependency path for %s: %s", d.Import, err)
 	} else {
-		fmt.Printf("Downloading %s to %s", d.Source, depPath)
+		fmtcolor(Gray, "downloading %s\n", d.Source)
 
 		cmd := scm.DownloadCommand(d.Source, depPath)
 
@@ -68,7 +77,7 @@ func runInPath(path string, fn func() error) error {
 type Git struct{}
 
 func (g Git) Init(d *Dep) error {
-	return initScm(d, ".git", g)
+	return initScm(d, HiddenGit, g)
 }
 
 func (g Git) DownloadCommand(source, path string) *exec.Cmd {
@@ -89,7 +98,7 @@ func (g Git) Fetch(path string) error {
 type Hg struct{}
 
 func (h Hg) Init(d *Dep) error {
-	return initScm(d, ".hg", h)
+	return initScm(d, HiddenHg, h)
 }
 
 func (h Hg) DownloadCommand(source, path string) *exec.Cmd {
@@ -117,9 +126,8 @@ func (h Hg) Fetch(path string) error {
 type Svn struct {
 }
 
-// FIXME someone that has an SVN repo accessible, please
 func (s Svn) Init(d *Dep) error {
-	return initScm(d, ".svn", s)
+	return initScm(d, HiddenSvn, s)
 }
 
 func (s Svn) DownloadCommand(source, path string) *exec.Cmd {

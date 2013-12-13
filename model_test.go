@@ -39,7 +39,7 @@ func createScmDep(scm string, project string, paths ...string) *Dep {
 func TestGit(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".git", "github.com/d2fn/gopack")
+	dep := createScmDep(HiddenGit, "github.com/d2fn/gopack")
 
 	scm, err := dep.Scm()
 	if _, ok := scm.(Git); !ok {
@@ -50,7 +50,7 @@ func TestGit(t *testing.T) {
 func TestHg(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".hg", "code.google.com/p/go")
+	dep := createScmDep(HiddenHg, "code.google.com/p/go")
 
 	scm, err := dep.Scm()
 	if _, ok := scm.(Hg); !ok {
@@ -61,7 +61,7 @@ func TestHg(t *testing.T) {
 func TestUnknownScm(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".svn", "code.google.com/p/project")
+	dep := createScmDep(HiddenSvn, "code.google.com/p/project")
 
 	scm, err := dep.Scm()
 	if _, ok := scm.(Svn); !ok {
@@ -72,7 +72,7 @@ func TestUnknownScm(t *testing.T) {
 func TestSubPackages(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".hg", "code.google.com/p/go", "path/filepath", "io")
+	dep := createScmDep(HiddenHg, "code.google.com/p/go", "path/filepath", "io")
 	dep.Import = "code.google.com/p/go/path"
 
 	scm, err := dep.Scm()

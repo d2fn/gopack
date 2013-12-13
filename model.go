@@ -19,6 +19,18 @@ const (
 	TagFlag    = 1 << 2
 )
 
+var (
+	Scms = map[string]Scm{
+		GitTag: Git{},
+		HgTag:  Hg{},
+		SvnTag: Svn{}}
+
+	HiddenDirs = map[string]string{
+		GitTag: HiddenGit,
+		HgTag:  HiddenHg,
+		SvnTag: HiddenSvn}
+)
+
 type Dependencies struct {
 	Imports     []string
 	Keys        []string
@@ -204,42 +216,23 @@ func (d *Dep) switchToBranchOrTag() error {
 
 // Tell the scm where the dependency is hosted.
 func (d *Dep) Scm() (Scm, error) {
-	if d.Provider == "git" {
-		return Git{}, nil
-	} else if d.Provider == "hg" {
-		return Hg{}, nil
-	} else if d.Provider == "svn" {
-		return Svn{}, nil
-	}
-	parts := strings.Split(d.Import, "/")
-	initPath := d.Src()
-	scms := map[string]Scm{".git": Git{}, ".hg": Hg{}, ".svn": Svn{}}
-	// Traverse the source tree backwards until
-	// it finds the right directory
-	// or it arrives to the base of the import.
-	var scmFound Scm = nil
-	for _, _ = range parts {
-		for key, scm := range scms {
-			if d.scmPath(path.Join(initPath, key)) {
-				scmFound = scm
-				break
-			}
-		}
-		initPath = path.Join(initPath, "..")
+	switch d.Provider {
+	case GitTag:
+		return Scms[GitTag], nil
+	case HgTag:
+		return Scms[HgTag], nil
+	case SvnTag:
+		return Scms[SvnTag], nil
 	}
 
-	if scmFound != nil {
-		if d.Provider == "go" {
-			return Go{scmFound}, nil
-		} else {
-			return scmFound, nil
-		}
-	} else if d.Provider == "go" {
-		// this is a little janky, but it allows Go.Init() to be called; the next time
-		// .Scm is called, it'll find the appropriate Scm. This means the abstraction
-		// probably needs to be rethought BUT AINT NOBODY GOT TIME FOR THAT
-		return Go{nil}, nil
+	scm := scmInSource(d)
+
+	if d.Provider == "go" {
+		return Go{scm}, nil
+	} else if scm != nil {
+		return scm, nil
 	}
+
 	return nil, fmt.Errorf("unknown scm for %s", d.Import)
 }
 
@@ -305,4 +298,23 @@ func ShowValidationErrors(errors []*ProjectError) {
 	for _, e := range errors {
 		fmt.Errorf("%s\n", e.String())
 	}
+}
+
+// Traverse the source tree backwards until
+// it finds the right directory
+// or it arrives to the base of the import.
+func scmInSource(d *Dep) Scm {
+	parts := strings.Split(d.Import, "/")
+	initPath := d.Src()
+
+	for _, _ = range parts {
+		for key, scm := range Scms {
+			if d.scmPath(path.Join(initPath, HiddenDirs[key])) {
+				return scm
+			}
+		}
+		initPath = path.Join(initPath, "..")
+	}
+
+	return nil
 }
