@@ -107,7 +107,7 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 	dependencies.VisitDeps(
 		func(dep *Dep) {
 			fmtcolor(Gray, "updating %s\n", dep.Import)
-			scm, err := dep.Scm()
+			scm, err := NewScm(dep)
 			if err != nil {
 				fail(err)
 			}

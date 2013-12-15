@@ -48,9 +48,9 @@ type Dep struct {
 	// does this dep need to be fetched
 	fetch bool
 
-	// what is the provider for this dep (hg, git, bzr etc)
-	Provider string
-	// whence the Provider should clone/checkout
+	// what is the scm for this dep (hg, git, bzr etc)
+	Scm string
+	// whence the Scm should clone/checkout
 	Source string
 }
 
@@ -76,12 +76,12 @@ func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
 	}
 }
 
-func (d *Dep) setProvider(t *toml.TomlTree) {
-	provider := t.Get("provider")
-	if provider != nil {
-		d.Provider = provider.(string)
+func (d *Dep) setScm(t *toml.TomlTree) {
+	scm := t.Get("scm")
+	if scm != nil {
+		d.Scm = scm.(string)
 	} else {
-		d.Provider = "go"
+		d.Scm = "go"
 	}
 }
 
@@ -100,12 +100,12 @@ func (d *Dep) Validate() (err error) {
 		err = fmt.Errorf("%s - only one of branch/commit/tag may be specified\n", d.Import)
 	}
 
-	if d.Provider != "go" && d.Source == "" {
-		err = fmt.Errorf("%s - Provider set to an SCM system, but no source set.", d.Import)
+	if d.Scm != "go" && d.Source == "" {
+		err = fmt.Errorf("%s - Scm set to an SCM system, but no source set.", d.Import)
 	}
 
-	if d.Provider == "go" && d.Source != "" {
-		err = fmt.Errorf("%s - Source set, but no provider", d.Import)
+	if d.Scm == "go" && d.Source != "" {
+		err = fmt.Errorf("%s - Source set, but no scm", d.Import)
 	}
 	return err
 }
@@ -170,7 +170,7 @@ func (d *Dependencies) Install(repo string) {
 
 func (d *Dep) String() string {
 	if d.CheckoutType() != "" {
-		return fmt.Sprintf("import = %s, %s = %s, provider = %s", d.Import, d.CheckoutType(), d.CheckoutSpec, d.Provider)
+		return fmt.Sprintf("import = %s, %s = %s, scm = %s", d.Import, d.CheckoutType(), d.CheckoutSpec, d.Scm)
 	} else {
 		return fmt.Sprintf("import = %s", d.Import)
 	}
@@ -199,7 +199,7 @@ func (d *Dep) switchToBranchOrTag() error {
 		return err
 	}
 
-	scm, err := d.Scm()
+	scm, err := NewScm(d)
 
 	if err != nil {
 		log.Println(err)
@@ -215,27 +215,6 @@ func (d *Dep) switchToBranchOrTag() error {
 }
 
 // Tell the scm where the dependency is hosted.
-func (d *Dep) Scm() (Scm, error) {
-	switch d.Provider {
-	case GitTag:
-		return Scms[GitTag], nil
-	case HgTag:
-		return Scms[HgTag], nil
-	case SvnTag:
-		return Scms[SvnTag], nil
-	}
-
-	scm := scmInSource(d)
-
-	if d.Provider == "go" {
-		return Go{scm}, nil
-	} else if scm != nil {
-		return scm, nil
-	}
-
-	return nil, fmt.Errorf("unknown scm for %s", d.Import)
-}
-
 func (d *Dep) scmPath(scmPath string) bool {
 	stat, err := os.Stat(scmPath)
 	if err != nil {
@@ -298,23 +277,4 @@ func ShowValidationErrors(errors []*ProjectError) {
 	for _, e := range errors {
 		fmt.Errorf("%s\n", e.String())
 	}
-}
-
-// Traverse the source tree backwards until
-// it finds the right directory
-// or it arrives to the base of the import.
-func scmInSource(d *Dep) Scm {
-	parts := strings.Split(d.Import, "/")
-	initPath := d.Src()
-
-	for _, _ = range parts {
-		for key, scm := range Scms {
-			if d.scmPath(path.Join(initPath, HiddenDirs[key])) {
-				return scm
-			}
-		}
-		initPath = path.Join(initPath, "..")
-	}
-
-	return nil
 }

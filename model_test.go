@@ -41,7 +41,7 @@ func TestGit(t *testing.T) {
 
 	dep := createScmDep(HiddenGit, "github.com/d2fn/gopack")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Git); !ok {
 		t.Error("Expected scm to be git but it was %s.\n%v", scm, err)
 	}
@@ -52,7 +52,7 @@ func TestHg(t *testing.T) {
 
 	dep := createScmDep(HiddenHg, "code.google.com/p/go")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
@@ -63,7 +63,7 @@ func TestUnknownScm(t *testing.T) {
 
 	dep := createScmDep(HiddenSvn, "code.google.com/p/project")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Svn); !ok {
 		t.Errorf("Expected scm to be svn but it was %s.\n%v", scm, err)
 	}
@@ -75,7 +75,7 @@ func TestSubPackages(t *testing.T) {
 	dep := createScmDep(HiddenHg, "code.google.com/p/go", "path/filepath", "io")
 	dep.Import = "code.google.com/p/go/path"
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
@@ -107,7 +107,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	}
 }
 
-func TestProvider(t *testing.T) {
+func TestScm(t *testing.T) {
 	setupTestPwd()
 	setupEnv()
 
@@ -115,7 +115,7 @@ func TestProvider(t *testing.T) {
 [deps.testpewp]
   import = "github.com/calavera/testGoPack"
   branch = "master"
-  provider = "git"
+  scm = "git"
   source = "git@github.com:calavera/testGoPack"
 [deps.testnopro]
 import = "github.com/nu7hatch/gouuid"
@@ -127,11 +127,11 @@ import = "github.com/nu7hatch/gouuid"
 	if len(dependencies.DepList) > 2 {
 		t.Fatalf("WHOA buddy, shoulda had 2 deps, had %d instead", len(dependencies.DepList))
 	}
-	if dependencies.DepList[0].Provider != "git" {
-		t.Fatalf("Provider should have been git, was %s", dependencies.DepList[0])
+	if dependencies.DepList[0].Scm != "git" {
+		t.Fatalf("Scm should have been git, was %s", dependencies.DepList[0])
 	}
-	if dependencies.DepList[1].Provider != "go" {
-		t.Fatalf("Provider should have been go, was %s", dependencies.DepList[1])
+	if dependencies.DepList[1].Scm != "go" {
+		t.Fatalf("Scm should have been go, was %s", dependencies.DepList[1])
 	}
 
 	loadTransitiveDependencies(dependencies)
@@ -142,7 +142,7 @@ import = "github.com/nu7hatch/gouuid"
 
 }
 
-func TestProviderAndSourceRequired(t *testing.T) {
+func TestScmAndSourceRequired(t *testing.T) {
 	setupTestPwd()
 	setupEnv()
 
@@ -150,7 +150,7 @@ func TestProviderAndSourceRequired(t *testing.T) {
 [deps.testpewp]
   import = "github.com/pewp/libnosource"
   branch = "master"
-  provider = "git"`,
+  scm = "git"`,
 		`[deps.testnopro]
   import = "github.com/pewp/libnopro"
   branch = "master"
@@ -162,7 +162,7 @@ func TestProviderAndSourceRequired(t *testing.T) {
 		config := NewConfig(pwd)
 		dependencies, err := config.LoadDependencyModel(NewGraph())
 		if err == nil {
-			t.Fatalf("Supposed to have failed due to lacking Source or Provider - %s", dependencies.DepList[0])
+			t.Fatalf("Supposed to have failed due to lacking Source or Scm - %s", dependencies.DepList[0])
 		}
 	}
 }

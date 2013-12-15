@@ -61,17 +61,17 @@ cd ~/projects/myproject
 gp run *.go
 ```
 
-## Sources and Providers
+## Sources and Scms
 
-Gopack uses `goget` to download packages by default, but when you need more control over downloads you can be more specific about the source and the type of provider.
+Gopack uses `goget` to download packages by default, but when you need more control over downloads you can be more specific about the source and the type of scm.
 
-For example, if you want to download the source using git via ssh, you can provide the ssh url and specify `git` as a provider:
+For example, if you want to download the source using git via ssh, you can provide the ssh url and specify `git` as a scm:
 
 ```toml
 [deps.mux]
 import = "github.com/gorilla/mux"
 source = "git@github.com:gorilla/mux.git"
-provider = "git"
+scm = "git"
 ```
 
 You can do the same with Mercurial, `hg`, and Subversion, `svn`.

@@ -111,7 +111,7 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies, er
 		depTree := depsTree.Get(k).(*toml.TomlTree)
 		d := NewDependency(depTree.Get("import").(string))
 
-		d.setProvider(depTree)
+		d.setScm(depTree)
 		d.setSource(depTree)
 
 		d.setCheckout(depTree, "branch", BranchFlag)

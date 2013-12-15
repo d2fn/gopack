@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 )
 
 const (
@@ -155,8 +156,8 @@ func (s Svn) Fetch(path string) error {
 	})
 }
 
-// The Go provider embeds another provider and only implements Init so that
-// deps that don't specify a provider keep working like they did before
+// The Go scm embeds another scm and only implements Init so that
+// deps that don't specify a scm keep working like they did before
 type Go struct {
 	Scm
 }
@@ -167,4 +168,44 @@ func (g Go) Init(d *Dep) error {
 
 func (g Go) DownloadCommand(source, path string) *exec.Cmd {
 	return exec.Command("go", "get", "-d", "-u", source)
+}
+
+func NewScm(d *Dep) (Scm, error) {
+	switch d.Scm {
+	case GitTag:
+		return Scms[GitTag], nil
+	case HgTag:
+		return Scms[HgTag], nil
+	case SvnTag:
+		return Scms[SvnTag], nil
+	}
+
+	scm := scmInSource(d)
+
+	if d.Scm == "go" {
+		return Go{scm}, nil
+	} else if scm != nil {
+		return scm, nil
+	}
+
+	return nil, fmt.Errorf("unknown scm for %s", d.Import)
+}
+
+// Traverse the source tree backwards until
+// it finds the right directory
+// or it arrives to the base of the import.
+func scmInSource(d *Dep) Scm {
+	parts := strings.Split(d.Import, "/")
+	initPath := d.Src()
+
+	for _, _ = range parts {
+		for key, scm := range Scms {
+			if d.scmPath(path.Join(initPath, HiddenDirs[key])) {
+				return scm
+			}
+		}
+		initPath = path.Join(initPath, "..")
+	}
+
+	return nil
 }
