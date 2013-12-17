@@ -5,7 +5,6 @@ import (
 	"github.com/pelletier/go-toml"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 )
@@ -18,6 +17,18 @@ const (
 	BranchFlag = 1 << 0
 	CommitFlag = 1 << 1
 	TagFlag    = 1 << 2
+)
+
+var (
+	Scms = map[string]Scm{
+		GitTag: Git{},
+		HgTag:  Hg{},
+		SvnTag: Svn{}}
+
+	HiddenDirs = map[string]string{
+		GitTag: HiddenGit,
+		HgTag:  HiddenHg,
+		SvnTag: HiddenSvn}
 )
 
 type Dependencies struct {
@@ -34,7 +45,13 @@ type Dep struct {
 	// the name of the thing to checkout whether it be a commit, branch, or tag
 	CheckoutSpec string
 
+	// does this dep need to be fetched
 	fetch bool
+
+	// what is the scm for this dep (hg, git, bzr etc)
+	Scm string
+	// whence the Scm should clone/checkout
+	Source string
 }
 
 func NewDependency(repo string) *Dep {
@@ -59,11 +76,38 @@ func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
 	}
 }
 
-func (d *Dep) CheckValidity() {
+func (d *Dep) setScm(t *toml.TomlTree) {
+	scm := t.Get("scm")
+	if scm != nil {
+		d.Scm = scm.(string)
+	} else {
+		d.Scm = "go"
+	}
+}
+
+func (d *Dep) setSource(t *toml.TomlTree) {
+	source := t.Get("source")
+	if source != nil {
+		d.Source = source.(string)
+	} else {
+		d.Source = ""
+	}
+}
+
+func (d *Dep) Validate() (err error) {
 	f := d.CheckoutFlag
 	if f&(f-1) != 0 {
-		failf("%s - only one of branch/commit/tag may be specified\n", d.Import)
+		err = fmt.Errorf("%s - only one of branch/commit/tag may be specified\n", d.Import)
 	}
+
+	if d.Scm != "go" && d.Source == "" {
+		err = fmt.Errorf("%s - Scm set to an SCM system, but no source set.", d.Import)
+	}
+
+	if d.Scm == "go" && d.Source != "" {
+		err = fmt.Errorf("%s - Source set, but no scm", d.Import)
+	}
+	return err
 }
 
 func (d *Dependencies) VisitDeps(fn func(dep *Dep)) {
@@ -126,7 +170,7 @@ func (d *Dependencies) Install(repo string) {
 
 func (d *Dep) String() string {
 	if d.CheckoutType() != "" {
-		return fmt.Sprintf("import = %s, %s = %s", d.Import, d.CheckoutType(), d.CheckoutSpec)
+		return fmt.Sprintf("import = %s, %s = %s, scm = %s", d.Import, d.CheckoutType(), d.CheckoutSpec, d.Scm)
 	} else {
 		return fmt.Sprintf("import = %s", d.Import)
 	}
@@ -155,7 +199,7 @@ func (d *Dep) switchToBranchOrTag() error {
 		return err
 	}
 
-	scm, err := d.Scm()
+	scm, err := NewScm(d)
 
 	if err != nil {
 		log.Println(err)
@@ -171,27 +215,6 @@ func (d *Dep) switchToBranchOrTag() error {
 }
 
 // Tell the scm where the dependency is hosted.
-func (d *Dep) Scm() (Scm, error) {
-	parts := strings.Split(d.Import, "/")
-	initPath := d.Src()
-	scms := map[string]Scm{".git": Git{}, ".hg": Hg{}, ".svn": Svn{}}
-
-	// Traverse the source tree backwards until
-	// it finds the right directory
-	// or it arrives to the base of the import.
-	for _, _ = range parts {
-		for key, scm := range scms {
-			if d.scmPath(path.Join(initPath, key)) {
-				return scm, nil
-			}
-		}
-
-		initPath = path.Join(initPath, "..")
-	}
-
-	return nil, fmt.Errorf("unknown scm for %s", d.Import)
-}
-
 func (d *Dep) scmPath(scmPath string) bool {
 	stat, err := os.Stat(scmPath)
 	if err != nil {
@@ -215,19 +238,10 @@ func cdHome() error {
 	return os.Chdir(pwd)
 }
 
-// update the git repo for this dep
-func (d *Dep) goGetUpdate() (err error) {
-	if d.fetch {
-		cmd := exec.Command("go", "get", "-d", "-u", d.Import)
-		err = cmd.Run()
-	}
-	return
-}
-
-func (d *Dep) LoadTransitiveDeps(importGraph *Graph) *Dependencies {
+func (d *Dep) LoadTransitiveDeps(importGraph *Graph) (*Dependencies, error) {
 	configPath := path.Join(d.Src(), "gopack.config")
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil
+		return nil, nil
 	}
 	config := NewConfig(d.Src())
 	return config.LoadDependencyModel(importGraph)

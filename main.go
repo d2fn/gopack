@@ -76,8 +76,10 @@ func loadConfiguration(dir string) (*Config, *Dependencies) {
 	config := NewConfig(dir)
 	config.InitRepo(importGraph)
 
-	dependencies := config.LoadDependencyModel(importGraph)
-
+	dependencies, err := config.LoadDependencyModel(importGraph)
+	if err != nil {
+		failf(err.Error())
+	}
 	return config, dependencies
 }
 
@@ -105,7 +107,11 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 	dependencies.VisitDeps(
 		func(dep *Dep) {
 			fmtcolor(Gray, "updating %s\n", dep.Import)
-			err := dep.goGetUpdate()
+			scm, err := NewScm(dep)
+			if err != nil {
+				fail(err)
+			}
+			err = scm.Init(dep)
 			if err != nil {
 				fail(err)
 			}
@@ -114,7 +120,10 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
 				dep.switchToBranchOrTag()
 			}
-			transitive := dep.LoadTransitiveDeps(dependencies.ImportGraph)
+			transitive, err := dep.LoadTransitiveDeps(dependencies.ImportGraph)
+			if err != nil {
+				failf(err.Error())
+			}
 			if transitive != nil {
 				loadTransitiveDependencies(transitive)
 			}

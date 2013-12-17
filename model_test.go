@@ -39,9 +39,9 @@ func createScmDep(scm string, project string, paths ...string) *Dep {
 func TestGit(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".git", "github.com/d2fn/gopack")
+	dep := createScmDep(HiddenGit, "github.com/d2fn/gopack")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Git); !ok {
 		t.Error("Expected scm to be git but it was %s.\n%v", scm, err)
 	}
@@ -50,9 +50,9 @@ func TestGit(t *testing.T) {
 func TestHg(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".hg", "code.google.com/p/go")
+	dep := createScmDep(HiddenHg, "code.google.com/p/go")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
@@ -61,9 +61,9 @@ func TestHg(t *testing.T) {
 func TestUnknownScm(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".svn", "code.google.com/p/project")
+	dep := createScmDep(HiddenSvn, "code.google.com/p/project")
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Svn); !ok {
 		t.Errorf("Expected scm to be svn but it was %s.\n%v", scm, err)
 	}
@@ -72,10 +72,10 @@ func TestUnknownScm(t *testing.T) {
 func TestSubPackages(t *testing.T) {
 	setupTestPwd()
 
-	dep := createScmDep(".hg", "code.google.com/p/go", "path/filepath", "io")
+	dep := createScmDep(HiddenHg, "code.google.com/p/go", "path/filepath", "io")
 	dep.Import = "code.google.com/p/go/path"
 
-	scm, err := dep.Scm()
+	scm, err := NewScm(dep)
 	if _, ok := scm.(Hg); !ok {
 		t.Errorf("Expected scm to be hg but it was %s.\n%v", scm, err)
 	}
@@ -93,7 +93,7 @@ func TestTransitiveDependencies(t *testing.T) {
 	createFixtureConfig(pwd, fixture)
 
 	config := NewConfig(pwd)
-	dependencies := config.LoadDependencyModel(NewGraph())
+	dependencies, _ := config.LoadDependencyModel(NewGraph())
 	loadTransitiveDependencies(dependencies)
 
 	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")
@@ -104,5 +104,65 @@ func TestTransitiveDependencies(t *testing.T) {
 	dep = path.Join(pwd, VendorDir, "src", "github.com", "d2fn", "gopack")
 	if _, err := os.Stat(dep); os.IsNotExist(err) {
 		t.Errorf("Expected dependency github.com/d2fn/gopack to be in vendor %s\n", pwd)
+	}
+}
+
+func TestScm(t *testing.T) {
+	setupTestPwd()
+	setupEnv()
+
+	fixture := `
+[deps.testpewp]
+  import = "github.com/calavera/testGoPack"
+  branch = "master"
+  scm = "git"
+  source = "git@github.com:calavera/testGoPack"
+[deps.testnopro]
+import = "github.com/nu7hatch/gouuid"
+  branch = "master"
+`
+	createFixtureConfig(pwd, fixture)
+	config := NewConfig(pwd)
+	dependencies, _ := config.LoadDependencyModel(NewGraph())
+	if len(dependencies.DepList) > 2 {
+		t.Fatalf("WHOA buddy, shoulda had 2 deps, had %d instead", len(dependencies.DepList))
+	}
+	if dependencies.DepList[0].Scm != "git" {
+		t.Fatalf("Scm should have been git, was %s", dependencies.DepList[0])
+	}
+	if dependencies.DepList[1].Scm != "go" {
+		t.Fatalf("Scm should have been go, was %s", dependencies.DepList[1])
+	}
+
+	loadTransitiveDependencies(dependencies)
+	dep := path.Join(pwd, VendorDir, "src", "github.com", "calavera", "testGoPack")
+	if _, err := os.Stat(dep); os.IsNotExist(err) {
+		t.Errorf("Expected dependency github.com/calavera/testGoPack to be in vendor %s\n", pwd)
+	}
+
+}
+
+func TestScmAndSourceRequired(t *testing.T) {
+	setupTestPwd()
+	setupEnv()
+
+	fixtures := []string{`
+[deps.testpewp]
+  import = "github.com/pewp/libnosource"
+  branch = "master"
+  scm = "git"`,
+		`[deps.testnopro]
+  import = "github.com/pewp/libnopro"
+  branch = "master"
+  source = "git@github.com:pewp/libpewp.git"
+`}
+
+	for _, fixture := range fixtures {
+		createFixtureConfig(pwd, fixture)
+		config := NewConfig(pwd)
+		dependencies, err := config.LoadDependencyModel(NewGraph())
+		if err == nil {
+			t.Fatalf("Supposed to have failed due to lacking Source or Scm - %s", dependencies.DepList[0])
+		}
 	}
 }
