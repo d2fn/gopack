@@ -35,11 +35,11 @@ func scmStageDir(depPath, scmDir string) string {
 }
 
 func downloadDependency(d *Dep, depPath, scmType string, scm Scm) (err error) {
-	_, err = os.Stat(scmStageDir(depPath, scmType))
+	stage, err := os.Stat(scmStageDir(depPath, scmType))
 
-	if os.IsExist(err) {
+	if stage != nil && stage.IsDir() {
 		err = scm.Fetch(depPath)
-	} else if err != nil {
+	} else if err != nil && !os.IsNotExist(err) {
 		err = fmt.Errorf("Error while examining dependency path for %s: %s", d.Import, err)
 	} else {
 		fmtcolor(Gray, "downloading %s\n", d.Source)
@@ -60,9 +60,8 @@ func initScm(d *Dep, scmType string, scm Scm) error {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return fmt.Errorf("Error creating import dir %s", err)
 	} else {
-		downloadDependency(d, path, scmType, scm)
+		return downloadDependency(d, path, scmType, scm)
 	}
-	return nil
 }
 
 func runInPath(path string, fn func() error) error {
