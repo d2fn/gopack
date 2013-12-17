@@ -116,7 +116,7 @@ func TestScm(t *testing.T) {
   import = "github.com/calavera/testGoPack"
   branch = "master"
   scm = "git"
-  source = "git@github.com:calavera/testGoPack"
+  source = "https://github.com/calavera/testGoPack.git"
 [deps.testnopro]
 import = "github.com/nu7hatch/gouuid"
   branch = "master"
