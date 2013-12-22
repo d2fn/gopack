@@ -14,9 +14,11 @@ const (
 	GitTag    = "git"
 	HgTag     = "hg"
 	SvnTag    = "svn"
+	BzrTag    = "bzr"
 	HiddenGit = ".git"
 	HiddenHg  = ".hg"
 	HiddenSvn = ".svn"
+	HiddenBzr = ".bzr"
 )
 
 type Scm interface {
@@ -152,6 +154,38 @@ func (s Svn) Checkout(d *Dep) error {
 func (s Svn) Fetch(path string) error {
 	return runInPath(path, func() error {
 		return exec.Command("svn", "update").Run()
+	})
+}
+
+type Bzr struct {
+}
+
+func (b Bzr) Init(d *Dep) error {
+	return initScm(d, HiddenBzr, b)
+}
+
+func (b Bzr) DownloadCommand(source, path string) *exec.Cmd {
+	return exec.Command("bzr", "branch", source, path)
+}
+
+func (b Bzr) Checkout(d *Dep) error {
+	var cmd *exec.Cmd
+
+	switch d.CheckoutFlag {
+	case CommitFlag:
+		cmd = exec.Command("bzr", "update", "-r", d.CheckoutSpec)
+	case BranchFlag:
+		cmd = exec.Command("bzr", "update", "-r", "branch:"+d.CheckoutSpec)
+	case TagFlag:
+		cmd = exec.Command("bzr", "update", "-r", "tag:"+d.CheckoutSpec)
+	}
+
+	return cmd.Run()
+}
+
+func (b Bzr) Fetch(path string) error {
+	return runInPath(path, func() error {
+		return exec.Command("bzr", "pull").Run()
 	})
 }
 
