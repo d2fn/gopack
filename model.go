@@ -23,12 +23,14 @@ var (
 	Scms = map[string]Scm{
 		GitTag: Git{},
 		HgTag:  Hg{},
-		SvnTag: Svn{}}
+		SvnTag: Svn{},
+		BzrTag: Bzr{}}
 
 	HiddenDirs = map[string]string{
 		GitTag: HiddenGit,
 		HgTag:  HiddenHg,
-		SvnTag: HiddenSvn}
+		SvnTag: HiddenSvn,
+		BzrTag: HiddenBzr}
 )
 
 type Dependencies struct {
