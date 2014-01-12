@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"github.com/pelletier/go-toml"
 	"io/ioutil"
@@ -88,7 +89,7 @@ func (c *Config) checksum() []byte {
 		h.Write(dat)
 		c.Checksum = h.Sum(nil)
 	}
-	return c.Checksum
+	return []byte(hex.EncodeToString(c.Checksum))
 }
 
 func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies, err error) {
@@ -122,7 +123,7 @@ func (c *Config) LoadDependencyModel(importGraph *Graph) (deps *Dependencies, er
 			return nil, err
 		}
 
-		d.fetch = modifiedChecksum || d.CheckoutFlag == BranchFlag
+		d.Fetch(modifiedChecksum)
 
 		deps.Keys[i] = k
 		deps.Imports[i] = d.Import

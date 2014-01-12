@@ -70,6 +70,19 @@ func (d *Dep) Fetch(all bool) bool {
 	return d.fetch
 }
 
+func (d *Dep) Get() {
+	if d.fetch {
+		scm, err := NewScm(d)
+		if err != nil {
+			fail(err)
+		}
+		err = scm.Init(d)
+		if err != nil {
+			fail(err)
+		}
+	}
+}
+
 func (d *Dep) setCheckout(t *toml.TomlTree, key string, flag uint8) {
 	s := t.Get(key)
 	if s != nil {

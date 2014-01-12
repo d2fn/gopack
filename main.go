@@ -107,25 +107,21 @@ func loadTransitiveDependencies(dependencies *Dependencies) {
 	dependencies.VisitDeps(
 		func(dep *Dep) {
 			fmtcolor(Gray, "updating %s\n", dep.Import)
-			scm, err := NewScm(dep)
-			if err != nil {
-				fail(err)
-			}
-			err = scm.Init(dep)
-			if err != nil {
-				fail(err)
-			}
+			dep.Get()
 
 			if dep.CheckoutType() != "" {
 				fmtcolor(Gray, "pointing %s at %s %s\n", dep.Import, dep.CheckoutType(), dep.CheckoutSpec)
 				dep.switchToBranchOrTag()
 			}
-			transitive, err := dep.LoadTransitiveDeps(dependencies.ImportGraph)
-			if err != nil {
-				failf(err.Error())
-			}
-			if transitive != nil {
-				loadTransitiveDependencies(transitive)
+
+			if dep.fetch {
+				transitive, err := dep.LoadTransitiveDeps(dependencies.ImportGraph)
+				if err != nil {
+					failf(err.Error())
+				}
+				if transitive != nil {
+					loadTransitiveDependencies(transitive)
+				}
 			}
 		})
 }
